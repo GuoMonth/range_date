@@ -2,5 +2,16 @@
 name = "range_date"
 version = "0.1.0"
 edition = "2024"
+description = "A Rust crate for date range handling."
+license = "MIT"
+repository = "https://github.com/GuoMonth/range_date"
+homepage = "https://github.com/GuoMonth/range_date#readme"
+readme = "README.md"
+keywords = ["rust", "range_date", "date range"]
+categories = ["date"]
 
 [dependencies]
+anyhow = "1.0.99"
+chrono = "0.4.42"
+serde = "1.0.223"
+serde_json = "1.0.145"
