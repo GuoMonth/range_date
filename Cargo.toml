@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/GuoMonth/range_date"
 homepage = "https://github.com/GuoMonth/range_date#readme"
 readme = "README.md"
-keywords = ["rust", "range_date", "date range"]
+keywords = ["rust", "range_date", "date"]
 categories = ["date"]
 
 [dependencies]
