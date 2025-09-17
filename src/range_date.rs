@@ -252,10 +252,10 @@ mod tests {
         assert_eq!(rd.range_type, DatePeriod::Quarter);
         assert_eq!(rd.range_index, 2);
 
-        let rd = RangeDate::from_str("2024D150").unwrap();
+        let rd = RangeDate::from_str("2024D050").unwrap();
         assert_eq!(rd.year, 2024);
         assert_eq!(rd.range_type, DatePeriod::Daily);
-        assert_eq!(rd.range_index, 150);
+        assert_eq!(rd.range_index, 50);
 
         assert!(RangeDate::from_str("2024X1").is_err());
         assert!(RangeDate::from_str("invalid").is_err());
