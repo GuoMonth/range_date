@@ -70,17 +70,6 @@ let json = serde_json::to_string(&range).unwrap();
 println!("{}", json); // "2024Q2"
 ```
 
-### Leap Year Detection
-
-```rust
-use range_date::leap_year;
-
-assert_eq!(leap_year(2024), true);   // Leap year
-assert_eq!(leap_year(2023), false);  // Not a leap year
-assert_eq!(leap_year(2000), true);   // Leap year (divisible by 400)
-assert_eq!(leap_year(1900), false);  // Not a leap year (divisible by 100 but not 400)
-```
-
 ## Date Range Format
 
 The crate uses a compact string format for date ranges:

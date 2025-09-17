@@ -47,6 +47,6 @@ pub mod range_type;
 /// assert_eq!(leap_year(2000), true);   // Leap year (divisible by 400)  
 /// assert_eq!(leap_year(1900), false);  // Not a leap year (divisible by 100 but not 400)
 /// ```
-pub const fn leap_year(year: i32) -> bool {
+const fn leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }
