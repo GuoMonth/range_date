@@ -2,13 +2,15 @@
 name = "range_date"
 version = "0.1.0"
 edition = "2024"
-description = "A Rust crate for date range handling."
+description = "A Rust crate for date range handling with support for years, quarters, months, and days."
 license = "MIT"
 repository = "https://github.com/GuoMonth/range_date"
-homepage = "https://github.com/GuoMonth/range_date#readme"
+homepage = "https://github.com/GuoMonth/range_date"
+documentation = "https://docs.rs/range_date"
 readme = "README.md"
-keywords = ["rust", "range_date", "date"]
-categories = ["data-structures"]
+keywords = ["date", "range", "time", "period", "chrono"]
+categories = ["date-and-time", "data-structures"]
+authors = ["GuoMonth"]
 
 [dependencies]
 anyhow = "1.0.99"

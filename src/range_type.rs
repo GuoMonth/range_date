@@ -47,19 +47,19 @@ impl std::fmt::Display for DatePeriod {
 }
 
 impl DatePeriod {
-    /// Create a new RangeType from a string representation.
+    /// Create a new DatePeriod from a string representation.
     /// - Accepts "YEAR", "Y", "QUARTER", "Q", "MONTH", "M", "DAILY", "D" (case insensitive).
     /// - Returns an error for invalid inputs.
     /// # Examples
     /// ```
-    /// use range_date::range_type::RangeType;
+    /// use range_date::range_type::DatePeriod;
     ///
-    /// let rt = RangeType::new("Y").unwrap();
-    /// assert_eq!(rt, RangeType::YEAR);
-    /// let rt = RangeType::new("MONTH").unwrap();
-    /// assert_eq!(rt, RangeType::MONTH);
-    /// let rt = RangeType::new("invalid");
-    /// assert!(rt.is_err());
+    /// let dp = DatePeriod::new("Y").unwrap();
+    /// assert_eq!(dp, DatePeriod::Year);
+    /// let dp = DatePeriod::new("MONTH").unwrap();
+    /// assert_eq!(dp, DatePeriod::Month);
+    /// let dp = DatePeriod::new("invalid");
+    /// assert!(dp.is_err());
     /// ```
     pub fn new(range_type: &str) -> anyhow::Result<Self> {
         match range_type.trim().to_uppercase().as_str() {
