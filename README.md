@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/range_date.svg)](https://crates.io/crates/range_date)
 [![Documentation](https://docs.rs/range_date/badge.svg)](https://docs.rs/range_date)
+[![codecov](https://codecov.io/github/GuoMonth/range_date/graph/badge.svg?token=LPXZVA7GSB)](https://codecov.io/github/GuoMonth/range_date)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A Rust crate for handling date ranges with support for years, quarters, months, and days.
