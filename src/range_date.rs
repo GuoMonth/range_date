@@ -97,21 +97,21 @@ impl RangeDate {
                 // any year is valid
             }
             DatePeriod::Quarter => {
-                if range_index < 1 || range_index > 4 {
+                if !(1..=4).contains(&range_index) {
                     return Err(anyhow::anyhow!(
                         "For Quarter, range_index must be between 1 and 4"
                     ));
                 }
             }
             DatePeriod::Month => {
-                if range_index < 1 || range_index > 12 {
+                if !(1..=12).contains(&range_index) {
                     return Err(anyhow::anyhow!(
                         "For Month, range_index must be between 1 and 12"
                     ));
                 }
             }
             DatePeriod::Daily => {
-                if range_index < 1 || range_index > 366 {
+                if !(1..=366).contains(&range_index) {
                     return Err(anyhow::anyhow!(
                         "For Daily, range_index must be between 1 and 366"
                     ));
@@ -123,12 +123,10 @@ impl RangeDate {
                             "For Daily in a leap year, range_index must be between 1 and 366"
                         ));
                     }
-                } else {
-                    if range_index > 365 {
-                        return Err(anyhow::anyhow!(
-                            "For Daily in a non-leap year, range_index must be between 1 and 365"
-                        ));
-                    }
+                } else if range_index > 365 {
+                    return Err(anyhow::anyhow!(
+                        "For Daily in a non-leap year, range_index must be between 1 and 365"
+                    ));
                 }
             }
         }
