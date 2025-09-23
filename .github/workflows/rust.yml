@@ -49,6 +49,28 @@ jobs:
           command: test
           args: --all --verbose
 
+      - name: Install tarpaulin
+        if: matrix.rust == 'stable'
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-tarpaulin
+      
+      - name: Generate coverage report
+        if: matrix.rust == 'stable'
+        uses: actions-rs/cargo@v1
+        with:
+          command: tarpaulin
+          args: --all-features --workspace --timeout 120 --out Xml --output-dir ./coverage
+      
+      - name: Upload coverage to Codecov
+        if: matrix.rust == 'stable'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/cobertura.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }} # Set in the repository secrets
+
   release:
     name: Release to crates.io
     needs: build
