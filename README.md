@@ -47,8 +47,8 @@ let parsed = DatePeriod::from_str("2024M03").unwrap();
 println!("{:?}", parsed); // DatePeriod::Month(2024, 3)
 
 // Get date ranges
-let first_day = q1_2024.get_first_day(); // 2024-01-01
-let last_day = q1_2024.get_last_day();   // 2024-03-31
+let first_day = q1_2024.get_first_day()?; // 2024-01-01
+let last_day = q1_2024.get_last_day()?;   // 2024-03-31
 ```
 
 ### Date Period Construction

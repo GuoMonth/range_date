@@ -43,8 +43,8 @@ fn main() -> anyhow::Result<()> {
     println!("\n4. Date Range Examples:");
     let q1_2024 = DatePeriod::quarter(2024, 1)?;
 
-    println!("  {} starts on: {}", q1_2024, q1_2024.get_first_day());
-    println!("  {} ends on: {}", q1_2024, q1_2024.get_last_day());
+    println!("  {} starts on: {}", q1_2024, q1_2024.get_first_day()?);
+    println!("  {} ends on: {}", q1_2024, q1_2024.get_last_day()?);
 
     // Check if a date is contained
     let test_date = NaiveDate::from_ymd_opt(2024, 2, 14).unwrap(); // Valentine's Day

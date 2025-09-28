@@ -180,75 +180,67 @@ impl DatePeriod {
     ///
     /// Returns the first date of the period. Since DatePeriod instances should only
     /// be created through validated constructors, this should always succeed.
-    /// Uses Jan 1, 1970 as fallback if date creation fails (which should never happen).
-    pub fn get_first_day(&self) -> NaiveDate {
-        // Safe fallback date that we know works
-        let fallback = match NaiveDate::from_ymd_opt(1970, 1, 1) {
-            Some(date) => date,
-            None => return NaiveDate::MIN, // Use the minimum date as absolute fallback
-        };
-
+    pub fn get_first_day(&self) -> anyhow::Result<NaiveDate> {
         match self {
-            DatePeriod::Year(year) => {
-                NaiveDate::from_ymd_opt(*year as i32, 1, 1).unwrap_or(fallback)
-            }
+            DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 1, 1)
+                .ok_or_else(|| anyhow::anyhow!("Invalid year for date creation: {}", year)),
             DatePeriod::Quarter(year, quarter) => {
-                NaiveDate::from_ymd_opt(*year as i32, (quarter - 1) * 3 + 1, 1).unwrap_or(fallback)
+                let month = (quarter - 1) * 3 + 1;
+                NaiveDate::from_ymd_opt(*year as i32, month, 1).ok_or_else(|| {
+                    anyhow::anyhow!("Invalid quarter date: year {}, quarter {}", year, quarter)
+                })
             }
-            DatePeriod::Month(year, month) => {
-                NaiveDate::from_ymd_opt(*year as i32, *month, 1).unwrap_or(fallback)
-            }
-            DatePeriod::Daily(year, day) => {
-                NaiveDate::from_yo_opt(*year as i32, *day).unwrap_or(fallback)
-            }
+            DatePeriod::Month(year, month) => NaiveDate::from_ymd_opt(*year as i32, *month, 1)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Invalid month date: year {}, month {}", year, month)
+                }),
+            DatePeriod::Daily(year, day) => NaiveDate::from_yo_opt(*year as i32, *day)
+                .ok_or_else(|| anyhow::anyhow!("Invalid daily date: year {}, day {}", year, day)),
         }
     }
 
     /// Get the last day of this period
     ///
-    /// Returns the last date of the period. Uses safe fallbacks if date calculations fail.
-    pub fn get_last_day(&self) -> NaiveDate {
-        // Safe fallback date
-        let fallback = match NaiveDate::from_ymd_opt(1970, 1, 1) {
-            Some(date) => date,
-            None => return NaiveDate::MIN,
-        };
-
+    /// Returns the last date of the period.
+    pub fn get_last_day(&self) -> anyhow::Result<NaiveDate> {
         match self {
-            DatePeriod::Year(year) => {
-                NaiveDate::from_ymd_opt(*year as i32, 12, 31).unwrap_or(fallback)
-            }
+            DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 12, 31)
+                .ok_or_else(|| anyhow::anyhow!("Invalid year for last day calculation: {}", year)),
             DatePeriod::Quarter(_, _) => {
-                let first_day = self.get_first_day();
-                if let Some(added) = first_day.checked_add_months(Months::new(3)) {
-                    if let Some(last) = added.pred_opt() {
-                        last
-                    } else {
-                        fallback
-                    }
-                } else {
-                    fallback
-                }
+                let first_day = self.get_first_day()?;
+                let added_months =
+                    first_day
+                        .checked_add_months(Months::new(3))
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("Failed to add 3 months to quarter start date")
+                        })?;
+                let last_day = added_months.pred_opt().ok_or_else(|| {
+                    anyhow::anyhow!("Failed to get predecessor date for quarter end")
+                })?;
+                Ok(last_day)
             }
             DatePeriod::Month(_, _) => {
-                let first_day = self.get_first_day();
-                if let Some(added) = first_day.checked_add_months(Months::new(1)) {
-                    if let Some(last) = added.pred_opt() {
-                        last
-                    } else {
-                        fallback
-                    }
-                } else {
-                    fallback
-                }
+                let first_day = self.get_first_day()?;
+                let added_months = first_day
+                    .checked_add_months(Months::new(1))
+                    .ok_or_else(|| anyhow::anyhow!("Failed to add 1 month to month start date"))?;
+                let last_day = added_months.pred_opt().ok_or_else(|| {
+                    anyhow::anyhow!("Failed to get predecessor date for month end")
+                })?;
+                Ok(last_day)
             }
-            DatePeriod::Daily(_, _) => self.get_first_day(),
+            DatePeriod::Daily(_, _) => self.get_first_day(), // Same as first day for daily period
         }
     }
 
     /// Check if this period contains the given date
+    ///
+    /// Returns false if there's an error calculating the date boundaries.
     pub fn contains_date(&self, date: NaiveDate) -> bool {
-        date >= self.get_first_day() && date <= self.get_last_day()
+        match (self.get_first_day(), self.get_last_day()) {
+            (Ok(first), Ok(last)) => date >= first && date <= last,
+            _ => false, // Return false if we can't calculate the boundaries
+        }
     }
 
     /// Get the year component
@@ -399,45 +391,47 @@ mod tests {
     }
 
     #[test]
-    fn test_get_first_and_last_day() {
+    fn test_get_first_and_last_day() -> anyhow::Result<()> {
         // Test year
         let year_period = DatePeriod::year(2024);
         assert_eq!(
-            year_period.get_first_day(),
+            year_period.get_first_day()?,
             NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
         );
         assert_eq!(
-            year_period.get_last_day(),
+            year_period.get_last_day()?,
             NaiveDate::from_ymd_opt(2024, 12, 31).unwrap()
         );
 
         // Test quarter
         let quarter_period = DatePeriod::quarter(2024, 2).unwrap(); // Q2 = Apr-Jun
         assert_eq!(
-            quarter_period.get_first_day(),
+            quarter_period.get_first_day()?,
             NaiveDate::from_ymd_opt(2024, 4, 1).unwrap()
         );
         assert_eq!(
-            quarter_period.get_last_day(),
+            quarter_period.get_last_day()?,
             NaiveDate::from_ymd_opt(2024, 6, 30).unwrap()
         );
 
         // Test month
         let month_period = DatePeriod::month(2024, 5).unwrap(); // May
         assert_eq!(
-            month_period.get_first_day(),
+            month_period.get_first_day()?,
             NaiveDate::from_ymd_opt(2024, 5, 1).unwrap()
         );
         assert_eq!(
-            month_period.get_last_day(),
+            month_period.get_last_day()?,
             NaiveDate::from_ymd_opt(2024, 5, 31).unwrap()
         );
 
         // Test daily
         let daily_period = DatePeriod::daily(2024, 136).unwrap(); // May 15
         let expected_date = NaiveDate::from_yo_opt(2024, 136).unwrap();
-        assert_eq!(daily_period.get_first_day(), expected_date);
-        assert_eq!(daily_period.get_last_day(), expected_date);
+        assert_eq!(daily_period.get_first_day()?, expected_date);
+        assert_eq!(daily_period.get_last_day()?, expected_date);
+
+        Ok(())
     }
 
     #[test]
