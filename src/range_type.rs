@@ -20,7 +20,7 @@ impl Serialize for DatePeriod {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&format!("{}", self))
     }
 }
 
@@ -45,7 +45,12 @@ impl std::str::FromStr for DatePeriod {
 
 impl std::fmt::Display for DatePeriod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        match self {
+            DatePeriod::Year(year) => write!(f, "{}Y", year),
+            DatePeriod::Quarter(year, quarter) => write!(f, "{}Q{}", year, quarter),
+            DatePeriod::Month(year, month) => write!(f, "{}M{}", year, month),
+            DatePeriod::Daily(year, day) => write!(f, "{}D{}", year, day),
+        }
     }
 }
 
@@ -172,38 +177,70 @@ impl DatePeriod {
     }
 
     /// Get the first day of this period
+    ///
+    /// Returns the first date of the period. Since DatePeriod instances should only
+    /// be created through validated constructors, this should always succeed.
+    /// Uses Jan 1, 1970 as fallback if date creation fails (which should never happen).
     pub fn get_first_day(&self) -> NaiveDate {
+        // Safe fallback date that we know works
+        let fallback = match NaiveDate::from_ymd_opt(1970, 1, 1) {
+            Some(date) => date,
+            None => return NaiveDate::MIN, // Use the minimum date as absolute fallback
+        };
+
         match self {
-            DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 1, 1).unwrap(),
+            DatePeriod::Year(year) => {
+                NaiveDate::from_ymd_opt(*year as i32, 1, 1).unwrap_or(fallback)
+            }
             DatePeriod::Quarter(year, quarter) => {
-                NaiveDate::from_ymd_opt(*year as i32, (quarter - 1) * 3 + 1, 1).unwrap()
+                NaiveDate::from_ymd_opt(*year as i32, (quarter - 1) * 3 + 1, 1).unwrap_or(fallback)
             }
             DatePeriod::Month(year, month) => {
-                NaiveDate::from_ymd_opt(*year as i32, *month, 1).unwrap()
+                NaiveDate::from_ymd_opt(*year as i32, *month, 1).unwrap_or(fallback)
             }
-            DatePeriod::Daily(year, day) => NaiveDate::from_yo_opt(*year as i32, *day).unwrap(),
+            DatePeriod::Daily(year, day) => {
+                NaiveDate::from_yo_opt(*year as i32, *day).unwrap_or(fallback)
+            }
         }
     }
 
     /// Get the last day of this period
+    ///
+    /// Returns the last date of the period. Uses safe fallbacks if date calculations fail.
     pub fn get_last_day(&self) -> NaiveDate {
+        // Safe fallback date
+        let fallback = match NaiveDate::from_ymd_opt(1970, 1, 1) {
+            Some(date) => date,
+            None => return NaiveDate::MIN,
+        };
+
         match self {
-            DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 12, 31).unwrap(),
+            DatePeriod::Year(year) => {
+                NaiveDate::from_ymd_opt(*year as i32, 12, 31).unwrap_or(fallback)
+            }
             DatePeriod::Quarter(_, _) => {
                 let first_day = self.get_first_day();
-                first_day
-                    .checked_add_months(Months::new(3))
-                    .unwrap()
-                    .pred_opt()
-                    .unwrap()
+                if let Some(added) = first_day.checked_add_months(Months::new(3)) {
+                    if let Some(last) = added.pred_opt() {
+                        last
+                    } else {
+                        fallback
+                    }
+                } else {
+                    fallback
+                }
             }
             DatePeriod::Month(_, _) => {
                 let first_day = self.get_first_day();
-                first_day
-                    .checked_add_months(Months::new(1))
-                    .unwrap()
-                    .pred_opt()
-                    .unwrap()
+                if let Some(added) = first_day.checked_add_months(Months::new(1)) {
+                    if let Some(last) = added.pred_opt() {
+                        last
+                    } else {
+                        fallback
+                    }
+                } else {
+                    fallback
+                }
             }
             DatePeriod::Daily(_, _) => self.get_first_day(),
         }
@@ -251,16 +288,6 @@ impl DatePeriod {
             DatePeriod::Quarter(_, _) => "QUARTER",
             DatePeriod::Month(_, _) => "MONTH",
             DatePeriod::Daily(_, _) => "DAILY",
-        }
-    }
-
-    /// Convert to string representation like "2024Q2"
-    pub fn to_string(&self) -> String {
-        match self {
-            DatePeriod::Year(year) => format!("{}Y", year),
-            DatePeriod::Quarter(year, quarter) => format!("{}Q{}", year, quarter),
-            DatePeriod::Month(year, month) => format!("{}M{}", year, month),
-            DatePeriod::Daily(year, day) => format!("{}D{}", year, day),
         }
     }
 }

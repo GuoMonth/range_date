@@ -1,5 +1,4 @@
 use range_date::range_type::DatePeriod;
-use std::str::FromStr;
 
 fn main() -> anyhow::Result<()> {
     println!("=== Testing Year Format Fix ===\n");
