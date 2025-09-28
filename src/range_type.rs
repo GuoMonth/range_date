@@ -99,26 +99,41 @@ impl DatePeriod {
     }
 
     /// Parse a DatePeriod from a string representation like "2024Q2"
-    /// Format: YYYYT# where T is period type (Y/Q/M/D) and # is the index
+    /// Format: YYYYT[#] where T is period type (Y/Q/M/D) and # is the index (optional for Y)
     pub fn parse(s: &str) -> anyhow::Result<Self> {
         let s = s.trim();
         if s.len() < 5 {
-            return Err(anyhow::anyhow!("Invalid format, expected YYYYT#: {}", s));
+            return Err(anyhow::anyhow!("Invalid format, expected YYYYT[#]: {}", s));
         }
 
         let year: u32 = s[0..4]
             .parse()
             .map_err(|_| anyhow::anyhow!("Invalid year in: {}", s))?;
         let period_type = &s[4..5];
-        let index: u32 = s[5..]
-            .parse()
-            .map_err(|_| anyhow::anyhow!("Invalid index in: {}", s))?;
 
         match period_type {
-            "Y" => Ok(Self::year(year)),
-            "Q" => Self::quarter(year, index),
-            "M" => Self::month(year, index),
-            "D" => Self::daily(year, index),
+            "Y" => {
+                // Year format is just "2024Y" - no index needed
+                if s.len() != 5 {
+                    return Err(anyhow::anyhow!("Year format should be YYYYY: {}", s));
+                }
+                Ok(Self::year(year))
+            }
+            "Q" | "M" | "D" => {
+                if s.len() <= 5 {
+                    return Err(anyhow::anyhow!("Missing index for {}: {}", period_type, s));
+                }
+                let index: u32 = s[5..]
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("Invalid index in: {}", s))?;
+
+                match period_type {
+                    "Q" => Self::quarter(year, index),
+                    "M" => Self::month(year, index),
+                    "D" => Self::daily(year, index),
+                    _ => unreachable!(),
+                }
+            }
             _ => Err(anyhow::anyhow!(
                 "Invalid period type '{}' in: {}",
                 period_type,
@@ -242,7 +257,7 @@ impl DatePeriod {
     /// Convert to string representation like "2024Q2"
     pub fn to_string(&self) -> String {
         match self {
-            DatePeriod::Year(year) => format!("{}Y{}", year, year),
+            DatePeriod::Year(year) => format!("{}Y", year),
             DatePeriod::Quarter(year, quarter) => format!("{}Q{}", year, quarter),
             DatePeriod::Month(year, month) => format!("{}M{}", year, month),
             DatePeriod::Daily(year, day) => format!("{}D{}", year, day),
@@ -293,10 +308,7 @@ mod tests {
     #[test]
     fn test_parse_from_string() {
         // Test valid parsing
-        assert_eq!(
-            DatePeriod::parse("2024Y2024").unwrap(),
-            DatePeriod::Year(2024)
-        );
+        assert_eq!(DatePeriod::parse("2024Y").unwrap(), DatePeriod::Year(2024));
         assert_eq!(
             DatePeriod::parse("2024Q2").unwrap(),
             DatePeriod::Quarter(2024, 2)
@@ -321,7 +333,7 @@ mod tests {
     #[test]
     fn test_from_str_trait() {
         assert_eq!(
-            DatePeriod::from_str("2024Y2024").unwrap(),
+            DatePeriod::from_str("2024Y").unwrap(),
             DatePeriod::Year(2024)
         );
         assert_eq!(
@@ -432,7 +444,7 @@ mod tests {
 
     #[test]
     fn test_to_string() {
-        assert_eq!(DatePeriod::year(2024).to_string(), "2024Y2024");
+        assert_eq!(DatePeriod::year(2024).to_string(), "2024Y");
         assert_eq!(DatePeriod::quarter(2024, 2).unwrap().to_string(), "2024Q2");
         assert_eq!(DatePeriod::month(2024, 5).unwrap().to_string(), "2024M5");
         assert_eq!(

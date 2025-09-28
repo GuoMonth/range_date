@@ -77,7 +77,7 @@ use chrono::NaiveDate;
 let date = NaiveDate::from_ymd_opt(2024, 8, 15).unwrap(); // August 15, 2024
 
 // Convert to different period types
-let as_year = DatePeriod::from_date_as_year(date);     // 2024Y2024
+let as_year = DatePeriod::from_date_as_year(date);     // 2024Y
 let as_quarter = DatePeriod::from_date_as_quarter(date); // 2024Q3
 let as_month = DatePeriod::from_date_as_month(date);     // 2024M8
 let as_daily = DatePeriod::from_date_as_daily(date);     // 2024D228
@@ -120,7 +120,7 @@ The crate uses a compact string format for date periods:
 
 - **Format**: `YYYY[PERIOD][INDEX]`
 - **Examples**:
-  - `2024Y2024` - Year 2024
+  - `2024Y` - Year 2024
   - `2024Q2` - Q2 2024 (April-June)
   - `2024M03` - March 2024
   - `2024D060` - 60th day of 2024
@@ -129,7 +129,7 @@ The crate uses a compact string format for date periods:
 
 | Period | Constructor | String Format | Description |
 |--------|-------------|---------------|-------------|
-| Year | `DatePeriod::year(2024)` | `2024Y2024` | Entire year |
+| Year | `DatePeriod::year(2024)` | `2024Y` | Entire year |
 | Quarter | `DatePeriod::quarter(2024, 1)` | `2024Q1` | Q1: Jan-Mar, Q2: Apr-Jun, etc. |
 | Month | `DatePeriod::month(2024, 3)` | `2024M3` | Specific month (1-12) |
 | Daily | `DatePeriod::daily(2024, 60)` | `2024D60` | Specific day of year (1-366) |
