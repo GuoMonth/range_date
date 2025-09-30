@@ -92,8 +92,8 @@ use chrono::NaiveDate;
 let q1_2024 = DatePeriod::quarter(2024, 1).unwrap();
 
 // Get date boundaries
-let start = q1_2024.get_first_day(); // 2024-01-01
-let end = q1_2024.get_last_day();    // 2024-03-31
+let start = q1_2024.get_first_day()?; // 2024-01-01
+let end = q1_2024.get_last_day()?;    // 2024-03-31
 
 // Check date containment
 let valentine = NaiveDate::from_ymd_opt(2024, 2, 14).unwrap();
