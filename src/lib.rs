@@ -23,8 +23,9 @@
 //! let parsed = DatePeriod::from_str("2024M03").unwrap();
 //!
 //! // Get date range
-//! let first_day = range.get_first_day()?;
-//! let last_day = range.get_last_day()?;
+//! let first_day = range.get_first_day().unwrap();
+//! let last_day = range.get_last_day().unwrap();
+//!
 //! ```
 
 pub mod range_type;
