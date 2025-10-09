@@ -4,31 +4,30 @@
 //!
 //! ## Main Components
 //!
-//! - [`range_date::RangeDate`] - Represents a specific date range with year, period type, and index
-//! - [`range_type::DatePeriod`] - Enum defining supported time periods (Year/Quarter/Month/Day)
+//! - [`range_type::DatePeriod`] - Enum defining date periods with embedded data (Year/Quarter/Month/Day)
 //! - [`leap_year`] - Utility function to determine if a year is a leap year
 //!
 //! ## Quick Example
 //!
 //! ```rust
-//! use range_date::{range_date::RangeDate, range_type::DatePeriod};
+//! use range_date::range_type::DatePeriod;
 //! use std::str::FromStr;
 //!
 //! // Create Q1 2024
-//! let range = RangeDate {
-//!     year: 2024,
-//!     range_type: DatePeriod::Quarter,
-//!     range_index: 1,
-//! };
+//! let range = DatePeriod::quarter(2024, 1).unwrap();
 //!
-//! // String representation: "2024Q1"
+//! // String representation: "2024Q1"  
 //! println!("{}", range);
 //!
 //! // Parse from string
-//! let parsed = RangeDate::from_str("2024M03").unwrap();
+//! let parsed = DatePeriod::from_str("2024M03").unwrap();
+//!
+//! // Get date range
+//! let first_day = range.get_first_day().unwrap();
+//! let last_day = range.get_last_day().unwrap();
+//!
 //! ```
 
-pub mod range_date;
 pub mod range_type;
 
 /// Determines if a given year is a leap year
