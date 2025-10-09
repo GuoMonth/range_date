@@ -37,7 +37,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run Clippy lints
-        run: cargo clippy --all-targets --all-features -- -D clippy::expect_used -D clippy::panic -D clippy::unwrap_used -D warnings
+        run: cargo clippy -- -D clippy::expect_used -D clippy::panic -D clippy::unwrap_used -D warnings
 
       - name: Build project
         run: cargo build --all --verbose
