@@ -123,7 +123,7 @@ The crate uses a compact string format for date periods:
   - `2024Y` - Year 2024
   - `2024Q2` - Q2 2024 (April-June)
   - `2024M03` - March 2024
-  - `2024D060` - 60th day of 2024
+  - `2024D060` / `2024D60` - 60th day of 2024
 
 ## Period Types
 
