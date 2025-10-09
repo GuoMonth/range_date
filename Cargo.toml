@@ -1,6 +1,6 @@
 [package]
 name = "range_date"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 description = "A Rust crate for date range handling with support for years, quarters, months, and days."
 license = "MIT"
