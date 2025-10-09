@@ -23,7 +23,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-range_date = "0.1.1"
+range_date = "0.2.0"
 ```
 
 ## Usage Examples
@@ -123,7 +123,7 @@ The crate uses a compact string format for date periods:
   - `2024Y` - Year 2024
   - `2024Q2` - Q2 2024 (April-June)
   - `2024M03` - March 2024
-  - `2024D060` - 60th day of 2024
+  - `2024D060` / `2024D60` - 60th day of 2024
 
 ## Period Types
 
@@ -134,9 +134,57 @@ The crate uses a compact string format for date periods:
 | Month | `DatePeriod::month(2024, 3)` | `2024M3` | Specific month (1-12) |
 | Daily | `DatePeriod::daily(2024, 60)` | `2024D60` | Specific day of year (1-366) |
 
+## Version Upgrade Guide
+
+### v0.2.0 - Major Testing Infrastructure Improvements
+
+**⚠️ Breaking Changes:**
+
+- **Testing Migration**: All example code has been converted to proper test cases in the `tests/` directory.
+
+**Why This Change?**
+
+1. **Better Development Experience**: Tests can now be run with simple `cargo test`
+2. **Improved CI/CD**: Integration with continuous integration pipelines is now seamless
+3. **Enhanced Maintainability**: Test code is better organized and easier to maintain
+4. **Performance**: Tests run in parallel, significantly faster than sequential example execution
+
+
+**New Testing Structure:**
+```
+tests/
+├── year_format_tests.rs      # Year format functionality tests
+├── integration_tests.rs      # Comprehensive usage examples as tests  
+└── comprehensive_tests.rs    # Edge cases and boundary tests
+```
+
+**Benefits:**
+- ✅ **29 comprehensive tests** covering all functionality
+- ✅ **Parallel execution** for faster feedback
+- ✅ **Better error reporting** with precise test failure information
+- ✅ **Hand-verification support** with `--nocapture` flag to see debug output
+- ✅ **CI/CD ready** for automated testing pipelines
+
 ## API Documentation
 
 For complete API documentation, visit [docs.rs](https://docs.rs/range_date).
+
+## Testing
+
+Run the comprehensive test suite:
+
+```bash
+# Run all tests
+cargo test
+
+# Run specific test files
+cargo test --test integration_tests
+cargo test --test year_format_tests
+
+# Run tests with output for manual verification
+cargo test test_constructor_examples -- --nocapture
+cargo test test_year_format -- --nocapture
+```
 
 ## License
 
@@ -144,4 +192,31 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Here are several ways you can help:
+
+### 🐛 Found a Bug?
+- Open an [issue](https://github.com/GuoMonth/range_date/issues) with a clear description
+- Include code examples that reproduce the problem
+- Mention your Rust version and operating system
+
+### 💡 Have a Feature Request?
+- Check existing [issues](https://github.com/GuoMonth/range_date/issues) to avoid duplicates
+- Open a new issue describing your use case and proposed solution
+- Explain why this feature would be valuable
+
+### 🔧 Want to Contribute Code?
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with comprehensive tests
+4. Ensure all tests pass (`cargo test`)
+5. Run formatting (`cargo fmt`) and linting (`cargo clippy`)
+6. Commit your changes (`git commit -am 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+### 📖 Documentation Improvements?
+- Documentation improvements are always welcome
+- Update examples in README.md or code comments
+- Help improve API documentation
+
+**Have questions or suggestions? Please [open an issue](https://github.com/GuoMonth/range_date/issues) - we'd love to hear from you!**
