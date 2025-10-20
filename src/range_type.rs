@@ -204,11 +204,7 @@ impl DatePeriod {
         let end_quarter = DatePeriod::from_date_as_quarter(end);
         while current <= end_quarter {
             result.push(current.clone());
-            if let Some(next) = current.succ()? {
-                current = next;
-            } else {
-                unreachable!("succ should always succeed for DatePeriod");
-            }
+            current = current.succ()?;
         }
         Ok(result)
     }
@@ -227,11 +223,7 @@ impl DatePeriod {
         let end_month = DatePeriod::from_date_as_month(end);
         while current <= end_month {
             result.push(current.clone());
-            if let Some(next) = current.succ()? {
-                current = next;
-            } else {
-                unreachable!("succ should always succeed for DatePeriod");
-            }
+            current = current.succ()?;
         }
         Ok(result)
     }
@@ -250,11 +242,7 @@ impl DatePeriod {
         let end_daily = DatePeriod::from_date_as_daily(end);
         while current <= end_daily {
             result.push(current.clone());
-            if let Some(next) = current.succ()? {
-                current = next;
-            } else {
-                anyhow::bail!("succ should always succeed for DatePeriod");
-            }
+            current = current.succ()?;
         }
         Ok(result)
     }
@@ -367,8 +355,8 @@ impl DatePeriod {
     }
 
     /// Get the successor (next) period
-    pub fn succ(&self) -> anyhow::Result<Option<DatePeriod>> {
-        Ok(Some(match self {
+    pub fn succ(&self) -> anyhow::Result<DatePeriod> {
+        Ok(match self {
             DatePeriod::Year(year) => DatePeriod::Year(year + 1),
             DatePeriod::Quarter(year, quarter) => {
                 if *quarter < 4 {
@@ -392,40 +380,40 @@ impl DatePeriod {
                     DatePeriod::Daily(year + 1, 1)
                 }
             }
-        }))
+        })
     }
 
     /// Get the predecessor (previous) period
-    pub fn pred(&self) -> anyhow::Result<Option<DatePeriod>> {
+    pub fn pred(&self) -> anyhow::Result<DatePeriod> {
         Ok(match self {
             DatePeriod::Year(year) => {
                 if *year > 0 {
-                    Some(DatePeriod::Year(year - 1))
+                    DatePeriod::Year(year - 1)
                 } else {
-                    None
+                    anyhow::bail!("No predecessor for year 0");
                 }
             }
             DatePeriod::Quarter(year, quarter) => {
                 if *quarter > 1 {
-                    Some(DatePeriod::Quarter(*year, quarter - 1))
+                    DatePeriod::Quarter(*year, quarter - 1)
                 } else if *year > 0 {
-                    Some(DatePeriod::Quarter(year - 1, 4))
+                    DatePeriod::Quarter(year - 1, 4)
                 } else {
-                    None
+                    anyhow::bail!("No predecessor for quarter 1 of year 0");
                 }
             }
             DatePeriod::Month(year, month) => {
                 if *month > 1 {
-                    Some(DatePeriod::Month(*year, month - 1))
+                    DatePeriod::Month(*year, month - 1)
                 } else if *year > 0 {
-                    Some(DatePeriod::Month(year - 1, 12))
+                    DatePeriod::Month(year - 1, 12)
                 } else {
-                    None
+                    anyhow::bail!("No predecessor for month 1 of year 0");
                 }
             }
             DatePeriod::Daily(year, day) => {
                 if *day > 1 {
-                    Some(DatePeriod::Daily(*year, day - 1))
+                    DatePeriod::Daily(*year, day - 1)
                 } else if *year > 0 {
                     let prev_year = year - 1;
                     let max_days_prev = if leap_year(prev_year as i32) {
@@ -433,9 +421,9 @@ impl DatePeriod {
                     } else {
                         365
                     };
-                    Some(DatePeriod::Daily(prev_year, max_days_prev))
+                    DatePeriod::Daily(prev_year, max_days_prev)
                 } else {
-                    None
+                    anyhow::bail!("No predecessor for day 1 of year 0");
                 }
             }
         })
