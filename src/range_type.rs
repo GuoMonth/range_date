@@ -56,12 +56,30 @@ impl std::fmt::Display for DatePeriod {
 
 impl DatePeriod {
     /// Create a new yearly period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year = DatePeriod::year(2024);
+    /// assert_eq!(year.to_string(), "2024Y");
+    /// ```
     pub fn year(year: u32) -> Self {
         DatePeriod::Year(year)
     }
 
     /// Create a new quarterly period with validation
     /// Quarter must be between 1 and 4
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let quarter = DatePeriod::quarter(2024, 2).unwrap();
+    /// assert_eq!(quarter.to_string(), "2024Q2");
+    /// ```
     pub fn quarter(year: u32, quarter: u32) -> anyhow::Result<Self> {
         if !(1..=4).contains(&quarter) {
             return Err(anyhow::anyhow!(
@@ -74,6 +92,15 @@ impl DatePeriod {
 
     /// Create a new monthly period with validation
     /// Month must be between 1 and 12
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let month = DatePeriod::month(2024, 5).unwrap();
+    /// assert_eq!(month.to_string(), "2024M5");
+    /// ```
     pub fn month(year: u32, month: u32) -> anyhow::Result<Self> {
         if !(1..=12).contains(&month) {
             return Err(anyhow::anyhow!(
@@ -86,6 +113,15 @@ impl DatePeriod {
 
     /// Create a new daily period with validation
     /// Day must be between 1 and 366 (accounting for leap years)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let daily = DatePeriod::daily(2024, 136).unwrap();
+    /// assert_eq!(daily.to_string(), "2024D136");
+    /// ```
     pub fn daily(year: u32, day: u32) -> anyhow::Result<Self> {
         if day == 0 {
             return Err(anyhow::anyhow!("Day must be greater than 0"));
@@ -105,6 +141,15 @@ impl DatePeriod {
 
     /// Parse a DatePeriod from a string representation like "2024Q2"
     /// Format: YYYYT[#] where T is period type (Y/Q/M/D) and # is the index (optional for Y)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::parse("2024Q2").unwrap();
+    /// assert_eq!(period.to_string(), "2024Q2");
+    /// ```
     pub fn parse(s: &str) -> anyhow::Result<Self> {
         let s = s.trim();
         if s.len() < 5 {
@@ -148,11 +193,33 @@ impl DatePeriod {
     }
 
     /// Convert a NaiveDate to a yearly DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let year = DatePeriod::from_date_as_year(date);
+    /// assert_eq!(year.to_string(), "2024Y");
+    /// ```
     pub fn from_date_as_year(date: NaiveDate) -> Self {
         Self::year(date.year() as u32)
     }
 
     /// Convert a NaiveDate to a quarterly DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let quarter = DatePeriod::from_date_as_quarter(date);
+    /// assert_eq!(quarter.to_string(), "2024Q2");
+    /// ```
     pub fn from_date_as_quarter(date: NaiveDate) -> Self {
         let year = date.year() as u32;
         let month = date.month();
@@ -167,17 +234,52 @@ impl DatePeriod {
     }
 
     /// Convert a NaiveDate to a monthly DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let month = DatePeriod::from_date_as_month(date);
+    /// assert_eq!(month.to_string(), "2024M5");
+    /// ```
     pub fn from_date_as_month(date: NaiveDate) -> Self {
         DatePeriod::Month(date.year() as u32, date.month())
     }
 
     /// Convert a NaiveDate to a daily DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let daily = DatePeriod::from_date_as_daily(date);
+    /// assert_eq!(daily.to_string(), "2024D136");
+    /// ```
     pub fn from_date_as_daily(date: NaiveDate) -> Self {
         DatePeriod::Daily(date.year() as u32, date.ordinal())
     }
 
     /// Generate all yearly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2023, 6, 15).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2025, 3, 10).unwrap();
+    /// let years = DatePeriod::between_date_as_year(start, end).unwrap();
+    /// assert_eq!(years.len(), 3);
+    /// assert_eq!(years[0].to_string(), "2023Y");
+    /// ```
     pub fn between_date_as_year(
         start: NaiveDate,
         end: NaiveDate,
@@ -192,6 +294,19 @@ impl DatePeriod {
 
     /// Generate all quarterly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2024, 4, 1).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2024, 9, 30).unwrap();
+    /// let quarters = DatePeriod::between_date_as_quarter(start, end).unwrap();
+    /// assert_eq!(quarters.len(), 2);
+    /// assert_eq!(quarters[0].to_string(), "2024Q2");
+    /// ```
     pub fn between_date_as_quarter(
         start: NaiveDate,
         end: NaiveDate,
@@ -211,6 +326,19 @@ impl DatePeriod {
 
     /// Generate all monthly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2024, 2, 1).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2024, 4, 30).unwrap();
+    /// let months = DatePeriod::between_date_as_month(start, end).unwrap();
+    /// assert_eq!(months.len(), 3);
+    /// assert_eq!(months[0].to_string(), "2024M2");
+    /// ```
     pub fn between_date_as_month(
         start: NaiveDate,
         end: NaiveDate,
@@ -230,6 +358,19 @@ impl DatePeriod {
 
     /// Generate all daily periods between two dates (inclusive)
     /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2024, 2, 1).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2024, 2, 3).unwrap();
+    /// let days = DatePeriod::between_date_as_daily(start, end).unwrap();
+    /// assert_eq!(days.len(), 3);
+    /// assert_eq!(days[0].to_string(), "2024M2D1");
+    /// ```
     pub fn between_date_as_daily(
         start: NaiveDate,
         end: NaiveDate,
@@ -251,6 +392,17 @@ impl DatePeriod {
     ///
     /// Returns the first date of the period. Since DatePeriod instances should only
     /// be created through validated constructors, this should always succeed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let first_day = period.get_first_day().unwrap();
+    /// assert_eq!(first_day, NaiveDate::from_ymd_opt(2024, 2, 1).unwrap());
+    /// ```
     pub fn get_first_day(&self) -> anyhow::Result<NaiveDate> {
         match self {
             DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 1, 1)
@@ -273,6 +425,17 @@ impl DatePeriod {
     /// Get the last day of this period
     ///
     /// Returns the last date of the period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let last_day = period.get_last_day().unwrap();
+    /// assert_eq!(last_day, NaiveDate::from_ymd_opt(2024, 2, 29).unwrap()); // 2024 is leap year
+    /// ```
     pub fn get_last_day(&self) -> anyhow::Result<NaiveDate> {
         match self {
             DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 12, 31)
@@ -307,6 +470,19 @@ impl DatePeriod {
     /// Check if this period contains the given date
     ///
     /// Returns false if there's an error calculating the date boundaries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let date_in_period = NaiveDate::from_ymd_opt(2024, 2, 15).unwrap();
+    /// let date_outside_period = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
+    /// assert!(period.contains_date(date_in_period));
+    /// assert!(!period.contains_date(date_outside_period));
+    /// ```
     pub fn contains_date(&self, date: NaiveDate) -> bool {
         match (self.get_first_day(), self.get_last_day()) {
             (Ok(first), Ok(last)) => date >= first && date <= last,
@@ -315,6 +491,15 @@ impl DatePeriod {
     }
 
     /// Get the year component
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(period.get_year(), 2024);
+    /// ```
     pub fn get_year(&self) -> u32 {
         match self {
             DatePeriod::Year(year) => *year,
@@ -325,6 +510,18 @@ impl DatePeriod {
     }
 
     /// Get the period value (quarter number, month number, or day number)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year_period = DatePeriod::year(2024).unwrap();
+    /// assert_eq!(year_period.value(), 2024);
+    ///
+    /// let month_period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(month_period.value(), 2);
+    /// ```
     pub fn value(&self) -> u32 {
         match self {
             DatePeriod::Year(year) => *year,
@@ -335,6 +532,18 @@ impl DatePeriod {
     }
 
     /// Get the short name of the period type
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year_period = DatePeriod::year(2024).unwrap();
+    /// assert_eq!(year_period.short_name(), "Y");
+    ///
+    /// let month_period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(month_period.short_name(), "M");
+    /// ```
     pub fn short_name(&self) -> &'static str {
         match self {
             DatePeriod::Year(_) => "Y",
@@ -345,6 +554,18 @@ impl DatePeriod {
     }
 
     /// Get the full name of the period type
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year_period = DatePeriod::year(2024).unwrap();
+    /// assert_eq!(year_period.period_name(), "YEAR");
+    ///
+    /// let month_period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(month_period.period_name(), "MONTH");
+    /// ```
     pub fn period_name(&self) -> &'static str {
         match self {
             DatePeriod::Year(_) => "YEAR",
@@ -355,6 +576,16 @@ impl DatePeriod {
     }
 
     /// Get the successor (next) period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let next_period = period.succ().unwrap();
+    /// assert_eq!(next_period.to_string(), "2024M3");
+    /// ```
     pub fn succ(&self) -> anyhow::Result<DatePeriod> {
         Ok(match self {
             DatePeriod::Year(year) => DatePeriod::Year(year + 1),
@@ -384,6 +615,16 @@ impl DatePeriod {
     }
 
     /// Get the predecessor (previous) period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let prev_period = period.pred().unwrap();
+    /// assert_eq!(prev_period.to_string(), "2024M1");
+    /// ```
     pub fn pred(&self) -> anyhow::Result<DatePeriod> {
         Ok(match self {
             DatePeriod::Year(year) => {
@@ -430,6 +671,18 @@ impl DatePeriod {
     }
 
     /// Decompose this period into its direct sub-periods
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let quarter = DatePeriod::quarter(2024, 1).unwrap();
+    /// let months = quarter.decompose().unwrap();
+    /// assert_eq!(months.len(), 3);
+    /// assert_eq!(months[0].to_string(), "2024M1");
+    /// assert_eq!(months[2].to_string(), "2024M3");
+    /// ```
     pub fn decompose(&self) -> anyhow::Result<Vec<DatePeriod>> {
         Ok(match self {
             DatePeriod::Year(year) => (1..=4)
