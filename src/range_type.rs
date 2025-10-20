@@ -711,41 +711,41 @@ mod tests {
         // Test year
         assert_eq!(
             DatePeriod::year(2024).succ().unwrap(),
-            Some(DatePeriod::Year(2025))
+            DatePeriod::Year(2025)
         );
 
         // Test quarter
         assert_eq!(
             DatePeriod::quarter(2024, 2).unwrap().succ().unwrap(),
-            Some(DatePeriod::Quarter(2024, 3))
+            DatePeriod::Quarter(2024, 3)
         );
         assert_eq!(
             DatePeriod::quarter(2024, 4).unwrap().succ().unwrap(),
-            Some(DatePeriod::Quarter(2025, 1))
+            DatePeriod::Quarter(2025, 1)
         );
 
         // Test month
         assert_eq!(
             DatePeriod::month(2024, 5).unwrap().succ().unwrap(),
-            Some(DatePeriod::Month(2024, 6))
+            DatePeriod::Month(2024, 6)
         );
         assert_eq!(
             DatePeriod::month(2024, 12).unwrap().succ().unwrap(),
-            Some(DatePeriod::Month(2025, 1))
+            DatePeriod::Month(2025, 1)
         );
 
         // Test daily
         assert_eq!(
             DatePeriod::daily(2024, 135).unwrap().succ().unwrap(),
-            Some(DatePeriod::Daily(2024, 136))
+            DatePeriod::Daily(2024, 136)
         );
         assert_eq!(
             DatePeriod::daily(2024, 366).unwrap().succ().unwrap(),
-            Some(DatePeriod::Daily(2025, 1))
+            DatePeriod::Daily(2025, 1)
         ); // Leap year
         assert_eq!(
             DatePeriod::daily(2023, 365).unwrap().succ().unwrap(),
-            Some(DatePeriod::Daily(2024, 1))
+            DatePeriod::Daily(2024, 1)
         ); // Non-leap
     }
 
@@ -754,42 +754,42 @@ mod tests {
         // Test year
         assert_eq!(
             DatePeriod::year(2024).pred().unwrap(),
-            Some(DatePeriod::Year(2023))
+            DatePeriod::Year(2023)
         );
-        assert_eq!(DatePeriod::year(0).pred().unwrap(), None);
+        assert_eq!(DatePeriod::year(0).pred().is_err(), true);
 
         // Test quarter
         assert_eq!(
             DatePeriod::quarter(2024, 2).unwrap().pred().unwrap(),
-            Some(DatePeriod::Quarter(2024, 1))
+            DatePeriod::Quarter(2024, 1)
         );
         assert_eq!(
             DatePeriod::quarter(2024, 1).unwrap().pred().unwrap(),
-            Some(DatePeriod::Quarter(2023, 4))
+            DatePeriod::Quarter(2023, 4)
         );
-        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred().unwrap(), None);
+        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred().is_err(), true);
 
         // Test month
         assert_eq!(
             DatePeriod::month(2024, 5).unwrap().pred().unwrap(),
-            Some(DatePeriod::Month(2024, 4))
+            DatePeriod::Month(2024, 4)
         );
         assert_eq!(
             DatePeriod::month(2024, 1).unwrap().pred().unwrap(),
-            Some(DatePeriod::Month(2023, 12))
+            DatePeriod::Month(2023, 12)
         );
-        assert_eq!(DatePeriod::month(0, 1).unwrap().pred().unwrap(), None);
+        assert_eq!(DatePeriod::month(0, 1).unwrap().pred().is_err(), true);
 
         // Test daily
         assert_eq!(
             DatePeriod::daily(2024, 135).unwrap().pred().unwrap(),
-            Some(DatePeriod::Daily(2024, 134))
+            DatePeriod::Daily(2024, 134)
         );
         assert_eq!(
             DatePeriod::daily(2024, 1).unwrap().pred().unwrap(),
-            Some(DatePeriod::Daily(2023, 365))
+            DatePeriod::Daily(2023, 365)
         ); // From leap to non-leap
-        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred().unwrap(), None);
+        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred().is_err(), true);
     }
 
     #[test]
