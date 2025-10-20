@@ -178,73 +178,85 @@ impl DatePeriod {
 
     /// Generate all yearly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
-    pub fn between_date_as_year(start: NaiveDate, end: NaiveDate) -> Vec<DatePeriod> {
+    pub fn between_date_as_year(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
         if start > end {
-            return vec![];
+            return Ok(vec![]);
         }
         let start_year = start.year() as u32;
         let end_year = end.year() as u32;
-        (start_year..=end_year).map(DatePeriod::year).collect()
+        Ok((start_year..=end_year).map(DatePeriod::year).collect())
     }
 
     /// Generate all quarterly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
-    pub fn between_date_as_quarter(start: NaiveDate, end: NaiveDate) -> Vec<DatePeriod> {
+    pub fn between_date_as_quarter(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
         if start > end {
-            return vec![];
+            return Ok(vec![]);
         }
         let mut result = vec![];
         let mut current = DatePeriod::from_date_as_quarter(start);
         let end_quarter = DatePeriod::from_date_as_quarter(end);
         while current <= end_quarter {
             result.push(current.clone());
-            if let Some(next) = current.succ() {
+            if let Some(next) = current.succ()? {
                 current = next;
             } else {
                 unreachable!("succ should always succeed for DatePeriod");
             }
         }
-        result
+        Ok(result)
     }
 
     /// Generate all monthly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
-    pub fn between_date_as_month(start: NaiveDate, end: NaiveDate) -> Vec<DatePeriod> {
+    pub fn between_date_as_month(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
         if start > end {
-            return vec![];
+            return Ok(vec![]);
         }
         let mut result = vec![];
         let mut current = DatePeriod::from_date_as_month(start);
         let end_month = DatePeriod::from_date_as_month(end);
         while current <= end_month {
             result.push(current.clone());
-            if let Some(next) = current.succ() {
+            if let Some(next) = current.succ()? {
                 current = next;
             } else {
                 unreachable!("succ should always succeed for DatePeriod");
             }
         }
-        result
+        Ok(result)
     }
 
     /// Generate all daily periods between two dates (inclusive)
     /// Returns an empty vector if start > end
-    pub fn between_date_as_daily(start: NaiveDate, end: NaiveDate) -> Vec<DatePeriod> {
+    pub fn between_date_as_daily(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
         if start > end {
-            return vec![];
+            return Ok(vec![]);
         }
         let mut result = vec![];
         let mut current = DatePeriod::from_date_as_daily(start);
         let end_daily = DatePeriod::from_date_as_daily(end);
         while current <= end_daily {
             result.push(current.clone());
-            if let Some(next) = current.succ() {
+            if let Some(next) = current.succ()? {
                 current = next;
             } else {
                 unreachable!("succ should always succeed for DatePeriod");
             }
         }
-        result
+        Ok(result)
     }
 
     /// Get the first day of this period
@@ -355,8 +367,8 @@ impl DatePeriod {
     }
 
     /// Get the successor (next) period
-    pub fn succ(&self) -> Option<DatePeriod> {
-        match self {
+    pub fn succ(&self) -> anyhow::Result<Option<DatePeriod>> {
+        Ok(match self {
             DatePeriod::Year(year) => Some(DatePeriod::Year(year + 1)),
             DatePeriod::Quarter(year, quarter) => {
                 if *quarter < 4 {
@@ -380,12 +392,12 @@ impl DatePeriod {
                     Some(DatePeriod::Daily(year + 1, 1))
                 }
             }
-        }
+        })
     }
 
     /// Get the predecessor (previous) period
-    pub fn pred(&self) -> Option<DatePeriod> {
-        match self {
+    pub fn pred(&self) -> anyhow::Result<Option<DatePeriod>> {
+        Ok(match self {
             DatePeriod::Year(year) => {
                 if *year > 0 {
                     Some(DatePeriod::Year(year - 1))
@@ -426,12 +438,12 @@ impl DatePeriod {
                     None
                 }
             }
-        }
+        })
     }
 
     /// Decompose this period into its direct sub-periods
-    pub fn decompose(&self) -> Vec<DatePeriod> {
-        match self {
+    pub fn decompose(&self) -> anyhow::Result<Vec<DatePeriod>> {
+        Ok(match self {
             DatePeriod::Year(year) => (1..=4)
                 .map(|q| match DatePeriod::quarter(*year, q) {
                     Ok(period) => period,
@@ -461,12 +473,12 @@ impl DatePeriod {
                     .collect()
             }
             DatePeriod::Daily(_, _) => vec![],
-        }
+        })
     }
 
     /// Aggregate this period to its direct parent period
-    pub fn aggregate(&self) -> Option<DatePeriod> {
-        match self {
+    pub fn aggregate(&self) -> anyhow::Result<Option<DatePeriod>> {
+        Ok(match self {
             DatePeriod::Year(_) => None,
             DatePeriod::Quarter(year, _) => Some(DatePeriod::year(*year)),
             DatePeriod::Month(year, month) => {
@@ -486,7 +498,7 @@ impl DatePeriod {
                     Err(_) => unreachable!("month should always succeed for valid month"),
                 })
             }
-        }
+        })
     }
 }
 
@@ -709,39 +721,42 @@ mod tests {
     #[test]
     fn test_succ() {
         // Test year
-        assert_eq!(DatePeriod::year(2024).succ(), Some(DatePeriod::Year(2025)));
+        assert_eq!(
+            DatePeriod::year(2024).succ().unwrap(),
+            Some(DatePeriod::Year(2025))
+        );
 
         // Test quarter
         assert_eq!(
-            DatePeriod::quarter(2024, 2).unwrap().succ(),
+            DatePeriod::quarter(2024, 2).unwrap().succ().unwrap(),
             Some(DatePeriod::Quarter(2024, 3))
         );
         assert_eq!(
-            DatePeriod::quarter(2024, 4).unwrap().succ(),
+            DatePeriod::quarter(2024, 4).unwrap().succ().unwrap(),
             Some(DatePeriod::Quarter(2025, 1))
         );
 
         // Test month
         assert_eq!(
-            DatePeriod::month(2024, 5).unwrap().succ(),
+            DatePeriod::month(2024, 5).unwrap().succ().unwrap(),
             Some(DatePeriod::Month(2024, 6))
         );
         assert_eq!(
-            DatePeriod::month(2024, 12).unwrap().succ(),
+            DatePeriod::month(2024, 12).unwrap().succ().unwrap(),
             Some(DatePeriod::Month(2025, 1))
         );
 
         // Test daily
         assert_eq!(
-            DatePeriod::daily(2024, 135).unwrap().succ(),
+            DatePeriod::daily(2024, 135).unwrap().succ().unwrap(),
             Some(DatePeriod::Daily(2024, 136))
         );
         assert_eq!(
-            DatePeriod::daily(2024, 366).unwrap().succ(),
+            DatePeriod::daily(2024, 366).unwrap().succ().unwrap(),
             Some(DatePeriod::Daily(2025, 1))
         ); // Leap year
         assert_eq!(
-            DatePeriod::daily(2023, 365).unwrap().succ(),
+            DatePeriod::daily(2023, 365).unwrap().succ().unwrap(),
             Some(DatePeriod::Daily(2024, 1))
         ); // Non-leap
     }
@@ -749,70 +764,73 @@ mod tests {
     #[test]
     fn test_pred() {
         // Test year
-        assert_eq!(DatePeriod::year(2024).pred(), Some(DatePeriod::Year(2023)));
-        assert_eq!(DatePeriod::year(0).pred(), None);
+        assert_eq!(
+            DatePeriod::year(2024).pred().unwrap(),
+            Some(DatePeriod::Year(2023))
+        );
+        assert_eq!(DatePeriod::year(0).pred().unwrap(), None);
 
         // Test quarter
         assert_eq!(
-            DatePeriod::quarter(2024, 2).unwrap().pred(),
+            DatePeriod::quarter(2024, 2).unwrap().pred().unwrap(),
             Some(DatePeriod::Quarter(2024, 1))
         );
         assert_eq!(
-            DatePeriod::quarter(2024, 1).unwrap().pred(),
+            DatePeriod::quarter(2024, 1).unwrap().pred().unwrap(),
             Some(DatePeriod::Quarter(2023, 4))
         );
-        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred(), None);
+        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred().unwrap(), None);
 
         // Test month
         assert_eq!(
-            DatePeriod::month(2024, 5).unwrap().pred(),
+            DatePeriod::month(2024, 5).unwrap().pred().unwrap(),
             Some(DatePeriod::Month(2024, 4))
         );
         assert_eq!(
-            DatePeriod::month(2024, 1).unwrap().pred(),
+            DatePeriod::month(2024, 1).unwrap().pred().unwrap(),
             Some(DatePeriod::Month(2023, 12))
         );
-        assert_eq!(DatePeriod::month(0, 1).unwrap().pred(), None);
+        assert_eq!(DatePeriod::month(0, 1).unwrap().pred().unwrap(), None);
 
         // Test daily
         assert_eq!(
-            DatePeriod::daily(2024, 135).unwrap().pred(),
+            DatePeriod::daily(2024, 135).unwrap().pred().unwrap(),
             Some(DatePeriod::Daily(2024, 134))
         );
         assert_eq!(
-            DatePeriod::daily(2024, 1).unwrap().pred(),
+            DatePeriod::daily(2024, 1).unwrap().pred().unwrap(),
             Some(DatePeriod::Daily(2023, 365))
         ); // From leap to non-leap
-        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred(), None);
+        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred().unwrap(), None);
     }
 
     #[test]
     fn test_decompose() {
         // Test year
-        let year_decomposed = DatePeriod::year(2025).decompose();
+        let year_decomposed = DatePeriod::year(2025).decompose().unwrap();
         assert_eq!(year_decomposed.len(), 4);
         assert_eq!(year_decomposed[0], DatePeriod::Quarter(2025, 1));
         assert_eq!(year_decomposed[3], DatePeriod::Quarter(2025, 4));
 
         // Test quarter
-        let quarter_decomposed = DatePeriod::quarter(2025, 4).unwrap().decompose();
+        let quarter_decomposed = DatePeriod::quarter(2025, 4).unwrap().decompose().unwrap();
         assert_eq!(quarter_decomposed.len(), 3);
         assert_eq!(quarter_decomposed[0], DatePeriod::Month(2025, 10));
         assert_eq!(quarter_decomposed[2], DatePeriod::Month(2025, 12));
 
         // Test month (non-leap)
-        let month_decomposed = DatePeriod::month(2023, 2).unwrap().decompose();
+        let month_decomposed = DatePeriod::month(2023, 2).unwrap().decompose().unwrap();
         assert_eq!(month_decomposed.len(), 28);
         assert_eq!(month_decomposed[0], DatePeriod::Daily(2023, 1));
         assert_eq!(month_decomposed[27], DatePeriod::Daily(2023, 28));
 
         // Test month (leap)
-        let leap_month_decomposed = DatePeriod::month(2024, 2).unwrap().decompose();
+        let leap_month_decomposed = DatePeriod::month(2024, 2).unwrap().decompose().unwrap();
         assert_eq!(leap_month_decomposed.len(), 29);
         assert_eq!(leap_month_decomposed[28], DatePeriod::Daily(2024, 29));
 
         // Test daily
-        let daily_decomposed = DatePeriod::daily(2024, 1).unwrap().decompose();
+        let daily_decomposed = DatePeriod::daily(2024, 1).unwrap().decompose().unwrap();
         assert_eq!(daily_decomposed.len(), 0);
     }
 
@@ -820,24 +838,24 @@ mod tests {
     fn test_aggregate() {
         // Test daily
         assert_eq!(
-            DatePeriod::daily(2024, 32).unwrap().aggregate(),
+            DatePeriod::daily(2024, 32).unwrap().aggregate().unwrap(),
             Some(DatePeriod::Month(2024, 2))
         );
 
         // Test month
         assert_eq!(
-            DatePeriod::month(2025, 10).unwrap().aggregate(),
+            DatePeriod::month(2025, 10).unwrap().aggregate().unwrap(),
             Some(DatePeriod::Quarter(2025, 4))
         );
 
         // Test quarter
         assert_eq!(
-            DatePeriod::quarter(2025, 4).unwrap().aggregate(),
+            DatePeriod::quarter(2025, 4).unwrap().aggregate().unwrap(),
             Some(DatePeriod::Year(2025))
         );
 
         // Test year
-        assert_eq!(DatePeriod::year(2025).aggregate(), None);
+        assert_eq!(DatePeriod::year(2025).aggregate().unwrap(), None);
     }
 
     #[test]
@@ -845,7 +863,7 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2023, 6, 15).unwrap();
         let end = NaiveDate::from_ymd_opt(2025, 3, 10).unwrap();
 
-        let result = DatePeriod::between_date_as_year(start, end);
+        let result = DatePeriod::between_date_as_year(start, end).unwrap();
         assert_eq!(
             result,
             vec![
@@ -856,11 +874,11 @@ mod tests {
         );
 
         // Same year
-        let same = DatePeriod::between_date_as_year(start, start);
+        let same = DatePeriod::between_date_as_year(start, start).unwrap();
         assert_eq!(same, vec![DatePeriod::Year(2023)]);
 
         // Start > end
-        let result_empty = DatePeriod::between_date_as_year(end, start);
+        let result_empty = DatePeriod::between_date_as_year(end, start).unwrap();
         assert_eq!(result_empty, vec![]);
     }
 
@@ -869,7 +887,7 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2024, 4, 1).unwrap(); // Q2 2024
         let end = NaiveDate::from_ymd_opt(2024, 9, 30).unwrap(); // Q3 2024
 
-        let result = DatePeriod::between_date_as_quarter(start, end);
+        let result = DatePeriod::between_date_as_quarter(start, end).unwrap();
         assert_eq!(
             result,
             vec![DatePeriod::Quarter(2024, 2), DatePeriod::Quarter(2024, 3)]
@@ -878,14 +896,14 @@ mod tests {
         // Cross year
         let start_cross = NaiveDate::from_ymd_opt(2024, 10, 1).unwrap(); // Q4 2024
         let end_cross = NaiveDate::from_ymd_opt(2025, 3, 31).unwrap(); // Q1 2025
-        let result_cross = DatePeriod::between_date_as_quarter(start_cross, end_cross);
+        let result_cross = DatePeriod::between_date_as_quarter(start_cross, end_cross).unwrap();
         assert_eq!(
             result_cross,
             vec![DatePeriod::Quarter(2024, 4), DatePeriod::Quarter(2025, 1)]
         );
 
         // Start > end
-        let result_empty = DatePeriod::between_date_as_quarter(end, start);
+        let result_empty = DatePeriod::between_date_as_quarter(end, start).unwrap();
         assert_eq!(result_empty, vec![]);
     }
 
@@ -894,7 +912,7 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2024, 2, 1).unwrap();
         let end = NaiveDate::from_ymd_opt(2024, 4, 30).unwrap();
 
-        let result = DatePeriod::between_date_as_month(start, end);
+        let result = DatePeriod::between_date_as_month(start, end).unwrap();
         assert_eq!(
             result,
             vec![
@@ -907,7 +925,7 @@ mod tests {
         // Cross year
         let start_cross = NaiveDate::from_ymd_opt(2024, 11, 1).unwrap();
         let end_cross = NaiveDate::from_ymd_opt(2025, 1, 31).unwrap();
-        let result_cross = DatePeriod::between_date_as_month(start_cross, end_cross);
+        let result_cross = DatePeriod::between_date_as_month(start_cross, end_cross).unwrap();
         assert_eq!(
             result_cross,
             vec![
@@ -918,7 +936,7 @@ mod tests {
         );
 
         // Start > end
-        let result_empty = DatePeriod::between_date_as_month(end, start);
+        let result_empty = DatePeriod::between_date_as_month(end, start).unwrap();
         assert_eq!(result_empty, vec![]);
     }
 
@@ -927,7 +945,7 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2024, 2, 28).unwrap();
         let end = NaiveDate::from_ymd_opt(2024, 3, 2).unwrap();
 
-        let result = DatePeriod::between_date_as_daily(start, end);
+        let result = DatePeriod::between_date_as_daily(start, end).unwrap();
         assert_eq!(
             result,
             vec![
@@ -939,11 +957,11 @@ mod tests {
         );
 
         // Same day
-        let same = DatePeriod::between_date_as_daily(start, start);
+        let same = DatePeriod::between_date_as_daily(start, start).unwrap();
         assert_eq!(same, vec![DatePeriod::Daily(2024, 59)]);
 
         // Start > end
-        let result_empty = DatePeriod::between_date_as_daily(end, start);
+        let result_empty = DatePeriod::between_date_as_daily(end, start).unwrap();
         assert_eq!(result_empty, vec![]);
     }
 }
