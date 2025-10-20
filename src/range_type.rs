@@ -253,7 +253,7 @@ impl DatePeriod {
             if let Some(next) = current.succ()? {
                 current = next;
             } else {
-                unreachable!("succ should always succeed for DatePeriod");
+                anyhow::bail!("succ should always succeed for DatePeriod");
             }
         }
         Ok(result)
@@ -368,31 +368,31 @@ impl DatePeriod {
 
     /// Get the successor (next) period
     pub fn succ(&self) -> anyhow::Result<Option<DatePeriod>> {
-        Ok(match self {
-            DatePeriod::Year(year) => Some(DatePeriod::Year(year + 1)),
+        Ok(Some(match self {
+            DatePeriod::Year(year) => DatePeriod::Year(year + 1),
             DatePeriod::Quarter(year, quarter) => {
                 if *quarter < 4 {
-                    Some(DatePeriod::Quarter(*year, quarter + 1))
+                    DatePeriod::Quarter(*year, quarter + 1)
                 } else {
-                    Some(DatePeriod::Quarter(year + 1, 1))
+                    DatePeriod::Quarter(year + 1, 1)
                 }
             }
             DatePeriod::Month(year, month) => {
                 if *month < 12 {
-                    Some(DatePeriod::Month(*year, month + 1))
+                    DatePeriod::Month(*year, month + 1)
                 } else {
-                    Some(DatePeriod::Month(year + 1, 1))
+                    DatePeriod::Month(year + 1, 1)
                 }
             }
             DatePeriod::Daily(year, day) => {
                 let max_days = if leap_year(*year as i32) { 366 } else { 365 };
                 if *day < max_days {
-                    Some(DatePeriod::Daily(*year, day + 1))
+                    DatePeriod::Daily(*year, day + 1)
                 } else {
-                    Some(DatePeriod::Daily(year + 1, 1))
+                    DatePeriod::Daily(year + 1, 1)
                 }
             }
-        })
+        }))
     }
 
     /// Get the predecessor (previous) period
