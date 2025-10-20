@@ -282,6 +282,81 @@ impl DatePeriod {
             DatePeriod::Daily(_, _) => "DAILY",
         }
     }
+
+    /// Get the successor (next) period
+    pub fn succ(&self) -> Option<DatePeriod> {
+        match self {
+            DatePeriod::Year(year) => Some(DatePeriod::Year(year + 1)),
+            DatePeriod::Quarter(year, quarter) => {
+                if *quarter < 4 {
+                    Some(DatePeriod::Quarter(*year, quarter + 1))
+                } else {
+                    Some(DatePeriod::Quarter(year + 1, 1))
+                }
+            }
+            DatePeriod::Month(year, month) => {
+                if *month < 12 {
+                    Some(DatePeriod::Month(*year, month + 1))
+                } else {
+                    Some(DatePeriod::Month(year + 1, 1))
+                }
+            }
+            DatePeriod::Daily(year, day) => {
+                let max_days = if leap_year(*year as i32) { 366 } else { 365 };
+                if *day < max_days {
+                    Some(DatePeriod::Daily(*year, day + 1))
+                } else {
+                    Some(DatePeriod::Daily(year + 1, 1))
+                }
+            }
+        }
+    }
+
+    /// Get the predecessor (previous) period
+    pub fn pred(&self) -> Option<DatePeriod> {
+        match self {
+            DatePeriod::Year(year) => {
+                if *year > 0 {
+                    Some(DatePeriod::Year(year - 1))
+                } else {
+                    None
+                }
+            }
+            DatePeriod::Quarter(year, quarter) => {
+                if *quarter > 1 {
+                    Some(DatePeriod::Quarter(*year, quarter - 1))
+                } else if *year > 0 {
+                    Some(DatePeriod::Quarter(year - 1, 4))
+                } else {
+                    None
+                }
+            }
+            DatePeriod::Month(year, month) => {
+                if *month > 1 {
+                    Some(DatePeriod::Month(*year, month - 1))
+                } else if *year > 0 {
+                    Some(DatePeriod::Month(year - 1, 12))
+                } else {
+                    None
+                }
+            }
+            DatePeriod::Daily(year, day) => {
+                if *day > 1 {
+                    Some(DatePeriod::Daily(*year, day - 1))
+                } else if *year > 0 {
+                    let prev_year = year - 1;
+                    let max_days_prev = if leap_year(prev_year as i32) {
+                        366
+                    } else {
+                        365
+                    };
+                    Some(DatePeriod::Daily(prev_year, max_days_prev))
+                } else {
+                    None
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -498,5 +573,85 @@ mod tests {
         // Non-leap year - only 365 days allowed
         assert!(DatePeriod::daily(2023, 365).is_ok());
         assert!(DatePeriod::daily(2023, 366).is_err());
+    }
+
+    #[test]
+    fn test_succ() {
+        // Test year
+        assert_eq!(DatePeriod::year(2024).succ(), Some(DatePeriod::Year(2025)));
+
+        // Test quarter
+        assert_eq!(
+            DatePeriod::quarter(2024, 2).unwrap().succ(),
+            Some(DatePeriod::Quarter(2024, 3))
+        );
+        assert_eq!(
+            DatePeriod::quarter(2024, 4).unwrap().succ(),
+            Some(DatePeriod::Quarter(2025, 1))
+        );
+
+        // Test month
+        assert_eq!(
+            DatePeriod::month(2024, 5).unwrap().succ(),
+            Some(DatePeriod::Month(2024, 6))
+        );
+        assert_eq!(
+            DatePeriod::month(2024, 12).unwrap().succ(),
+            Some(DatePeriod::Month(2025, 1))
+        );
+
+        // Test daily
+        assert_eq!(
+            DatePeriod::daily(2024, 135).unwrap().succ(),
+            Some(DatePeriod::Daily(2024, 136))
+        );
+        assert_eq!(
+            DatePeriod::daily(2024, 366).unwrap().succ(),
+            Some(DatePeriod::Daily(2025, 1))
+        ); // Leap year
+        assert_eq!(
+            DatePeriod::daily(2023, 365).unwrap().succ(),
+            Some(DatePeriod::Daily(2024, 1))
+        ); // Non-leap
+    }
+
+    #[test]
+    fn test_pred() {
+        // Test year
+        assert_eq!(DatePeriod::year(2024).pred(), Some(DatePeriod::Year(2023)));
+        assert_eq!(DatePeriod::year(0).pred(), None);
+
+        // Test quarter
+        assert_eq!(
+            DatePeriod::quarter(2024, 2).unwrap().pred(),
+            Some(DatePeriod::Quarter(2024, 1))
+        );
+        assert_eq!(
+            DatePeriod::quarter(2024, 1).unwrap().pred(),
+            Some(DatePeriod::Quarter(2023, 4))
+        );
+        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred(), None);
+
+        // Test month
+        assert_eq!(
+            DatePeriod::month(2024, 5).unwrap().pred(),
+            Some(DatePeriod::Month(2024, 4))
+        );
+        assert_eq!(
+            DatePeriod::month(2024, 1).unwrap().pred(),
+            Some(DatePeriod::Month(2023, 12))
+        );
+        assert_eq!(DatePeriod::month(0, 1).unwrap().pred(), None);
+
+        // Test daily
+        assert_eq!(
+            DatePeriod::daily(2024, 135).unwrap().pred(),
+            Some(DatePeriod::Daily(2024, 134))
+        );
+        assert_eq!(
+            DatePeriod::daily(2024, 1).unwrap().pred(),
+            Some(DatePeriod::Daily(2023, 365))
+        ); // From leap to non-leap
+        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred(), None);
     }
 }
