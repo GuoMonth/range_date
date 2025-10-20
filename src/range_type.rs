@@ -1,4 +1,4 @@
-use chrono::{Datelike, Months, NaiveDate};
+use chrono::{Datelike, Duration, Months, NaiveDate};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::leap_year;
@@ -357,6 +357,45 @@ impl DatePeriod {
             }
         }
     }
+
+    /// Decompose this period into its direct sub-periods
+    pub fn decompose(&self) -> Vec<DatePeriod> {
+        match self {
+            DatePeriod::Year(year) => (1..=4)
+                .map(|q| DatePeriod::quarter(*year, q).unwrap())
+                .collect(),
+            DatePeriod::Quarter(year, quarter) => {
+                let start_month = (quarter - 1) * 3 + 1;
+                (0..3)
+                    .map(|i| DatePeriod::month(*year, start_month + i).unwrap())
+                    .collect()
+            }
+            DatePeriod::Month(year, month) => {
+                let first_day = NaiveDate::from_ymd_opt(*year as i32, *month, 1).unwrap();
+                let last_day = first_day + Months::new(1) - Duration::days(1);
+                (1..=last_day.day())
+                    .map(|d| DatePeriod::daily(*year, d).unwrap())
+                    .collect()
+            }
+            DatePeriod::Daily(_, _) => vec![],
+        }
+    }
+
+    /// Aggregate this period to its direct parent period
+    pub fn aggregate(&self) -> Option<DatePeriod> {
+        match self {
+            DatePeriod::Year(_) => None,
+            DatePeriod::Quarter(year, _) => Some(DatePeriod::year(*year)),
+            DatePeriod::Month(year, month) => {
+                let quarter = ((month - 1) / 3) + 1;
+                Some(DatePeriod::quarter(*year, quarter).unwrap())
+            }
+            DatePeriod::Daily(year, day) => {
+                let date = NaiveDate::from_yo_opt(*year as i32, *day).unwrap();
+                Some(DatePeriod::month(date.year() as u32, date.month()).unwrap())
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -653,5 +692,59 @@ mod tests {
             Some(DatePeriod::Daily(2023, 365))
         ); // From leap to non-leap
         assert_eq!(DatePeriod::daily(0, 1).unwrap().pred(), None);
+    }
+
+    #[test]
+    fn test_decompose() {
+        // Test year
+        let year_decomposed = DatePeriod::year(2025).decompose();
+        assert_eq!(year_decomposed.len(), 4);
+        assert_eq!(year_decomposed[0], DatePeriod::Quarter(2025, 1));
+        assert_eq!(year_decomposed[3], DatePeriod::Quarter(2025, 4));
+
+        // Test quarter
+        let quarter_decomposed = DatePeriod::quarter(2025, 4).unwrap().decompose();
+        assert_eq!(quarter_decomposed.len(), 3);
+        assert_eq!(quarter_decomposed[0], DatePeriod::Month(2025, 10));
+        assert_eq!(quarter_decomposed[2], DatePeriod::Month(2025, 12));
+
+        // Test month (non-leap)
+        let month_decomposed = DatePeriod::month(2023, 2).unwrap().decompose();
+        assert_eq!(month_decomposed.len(), 28);
+        assert_eq!(month_decomposed[0], DatePeriod::Daily(2023, 1));
+        assert_eq!(month_decomposed[27], DatePeriod::Daily(2023, 28));
+
+        // Test month (leap)
+        let leap_month_decomposed = DatePeriod::month(2024, 2).unwrap().decompose();
+        assert_eq!(leap_month_decomposed.len(), 29);
+        assert_eq!(leap_month_decomposed[28], DatePeriod::Daily(2024, 29));
+
+        // Test daily
+        let daily_decomposed = DatePeriod::daily(2024, 1).unwrap().decompose();
+        assert_eq!(daily_decomposed.len(), 0);
+    }
+
+    #[test]
+    fn test_aggregate() {
+        // Test daily
+        assert_eq!(
+            DatePeriod::daily(2024, 32).unwrap().aggregate(),
+            Some(DatePeriod::Month(2024, 2))
+        );
+
+        // Test month
+        assert_eq!(
+            DatePeriod::month(2025, 10).unwrap().aggregate(),
+            Some(DatePeriod::Quarter(2025, 4))
+        );
+
+        // Test quarter
+        assert_eq!(
+            DatePeriod::quarter(2025, 4).unwrap().aggregate(),
+            Some(DatePeriod::Year(2025))
+        );
+
+        // Test year
+        assert_eq!(DatePeriod::year(2025).aggregate(), None);
     }
 }
