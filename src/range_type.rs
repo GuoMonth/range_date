@@ -198,7 +198,11 @@ impl DatePeriod {
         let end_quarter = DatePeriod::from_date_as_quarter(end);
         while current <= end_quarter {
             result.push(current.clone());
-            current = current.succ().unwrap();
+            if let Some(next) = current.succ() {
+                current = next;
+            } else {
+                unreachable!("succ should always succeed for DatePeriod");
+            }
         }
         result
     }
@@ -214,7 +218,11 @@ impl DatePeriod {
         let end_month = DatePeriod::from_date_as_month(end);
         while current <= end_month {
             result.push(current.clone());
-            current = current.succ().unwrap();
+            if let Some(next) = current.succ() {
+                current = next;
+            } else {
+                unreachable!("succ should always succeed for DatePeriod");
+            }
         }
         result
     }
@@ -230,7 +238,11 @@ impl DatePeriod {
         let end_daily = DatePeriod::from_date_as_daily(end);
         while current <= end_daily {
             result.push(current.clone());
-            current = current.succ().unwrap();
+            if let Some(next) = current.succ() {
+                current = next;
+            } else {
+                unreachable!("succ should always succeed for DatePeriod");
+            }
         }
         result
     }
@@ -421,19 +433,31 @@ impl DatePeriod {
     pub fn decompose(&self) -> Vec<DatePeriod> {
         match self {
             DatePeriod::Year(year) => (1..=4)
-                .map(|q| DatePeriod::quarter(*year, q).unwrap())
+                .map(|q| match DatePeriod::quarter(*year, q) {
+                    Ok(period) => period,
+                    Err(_) => unreachable!("quarter should always succeed for valid q"),
+                })
                 .collect(),
             DatePeriod::Quarter(year, quarter) => {
                 let start_month = (quarter - 1) * 3 + 1;
                 (0..3)
-                    .map(|i| DatePeriod::month(*year, start_month + i).unwrap())
+                    .map(|i| match DatePeriod::month(*year, start_month + i) {
+                        Ok(period) => period,
+                        Err(_) => unreachable!("month should always succeed for valid month"),
+                    })
                     .collect()
             }
             DatePeriod::Month(year, month) => {
-                let first_day = NaiveDate::from_ymd_opt(*year as i32, *month, 1).unwrap();
+                let first_day = match NaiveDate::from_ymd_opt(*year as i32, *month, 1) {
+                    Some(date) => date,
+                    None => unreachable!("from_ymd_opt should succeed for valid year and month"),
+                };
                 let last_day = first_day + Months::new(1) - Duration::days(1);
                 (1..=last_day.day())
-                    .map(|d| DatePeriod::daily(*year, d).unwrap())
+                    .map(|d| match DatePeriod::daily(*year, d) {
+                        Ok(period) => period,
+                        Err(_) => unreachable!("daily should always succeed for valid day"),
+                    })
                     .collect()
             }
             DatePeriod::Daily(_, _) => vec![],
@@ -447,11 +471,20 @@ impl DatePeriod {
             DatePeriod::Quarter(year, _) => Some(DatePeriod::year(*year)),
             DatePeriod::Month(year, month) => {
                 let quarter = ((month - 1) / 3) + 1;
-                Some(DatePeriod::quarter(*year, quarter).unwrap())
+                Some(match DatePeriod::quarter(*year, quarter) {
+                    Ok(period) => period,
+                    Err(_) => unreachable!("quarter should always succeed for valid quarter"),
+                })
             }
             DatePeriod::Daily(year, day) => {
-                let date = NaiveDate::from_yo_opt(*year as i32, *day).unwrap();
-                Some(DatePeriod::month(date.year() as u32, date.month()).unwrap())
+                let date = match NaiveDate::from_yo_opt(*year as i32, *day) {
+                    Some(d) => d,
+                    None => unreachable!("from_yo_opt should succeed for valid year and day"),
+                };
+                Some(match DatePeriod::month(date.year() as u32, date.month()) {
+                    Ok(period) => period,
+                    Err(_) => unreachable!("month should always succeed for valid month"),
+                })
             }
         }
     }
