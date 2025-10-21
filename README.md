@@ -136,13 +136,13 @@ let back_to_q1 = q2.pred().unwrap(); // Previous: 2024Q1
 
 // Period decomposition - Break down into sub-periods
 let year_2024 = DatePeriod::year(2024);
-let quarters_in_year = year_2024.decompose().unwrap();
+let quarters_in_year = year_2024.decompose();
 assert_eq!(quarters_in_year.len(), 4); // 4 quarters in a year
 
 // Period aggregation - Get parent period
 let month = DatePeriod::month(2024, 5).unwrap();
-let quarter = month.aggregate().unwrap();
-assert_eq!(quarter, Some(DatePeriod::quarter(2024, 2).unwrap()));
+let quarter = month.aggregate();
+assert_eq!(quarter, DatePeriod::quarter(2024, 2).unwrap());
 ```
 
 ### Period Information Queries **[NEW]**
