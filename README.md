@@ -13,6 +13,9 @@ A powerful Rust crate for handling date periods with embedded data and comprehen
 - 🔄 **Type Conversion**: String parsing and serialization support with validation
 - 📅 **Date Range Operations**: Calculate first/last days, check date containment
 - 🎯 **Date Conversion**: Convert NaiveDate to any period type
+- 🔀 **Advanced Period Operations**: Navigate between periods (succ/pred), decompose into sub-periods, aggregate to parent periods
+- 📊 **Range Generation**: Generate all periods between two dates for comprehensive date range analysis
+- 📚 **Comprehensive Documentation**: 26+ doc tests with practical examples for all public methods
 - ⚡ **High Performance**: Built on top of the efficient `chrono` library
 - 🛡️ **Type Safety**: Complete validation with proper error handling
 - 🧪 **Leap Year Support**: Accurate leap year detection and day validation
@@ -23,7 +26,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-range_date = "0.2.0"
+range_date = "0.2.1"
 ```
 
 ## Usage Examples
