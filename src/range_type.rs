@@ -369,7 +369,7 @@ impl DatePeriod {
     /// let end = NaiveDate::from_ymd_opt(2024, 2, 3).unwrap();
     /// let days = DatePeriod::between_date_as_daily(start, end).unwrap();
     /// assert_eq!(days.len(), 3);
-    /// assert_eq!(days[0].to_string(), "2024M2D1");
+    /// assert_eq!(days[0].to_string(), "2024D32");
     /// ```
     pub fn between_date_as_daily(
         start: NaiveDate,
@@ -516,7 +516,7 @@ impl DatePeriod {
     /// ```
     /// use range_date::range_type::DatePeriod;
     ///
-    /// let year_period = DatePeriod::year(2024).unwrap();
+    /// let year_period = DatePeriod::year(2024);
     /// assert_eq!(year_period.value(), 2024);
     ///
     /// let month_period = DatePeriod::month(2024, 2).unwrap();
@@ -538,7 +538,7 @@ impl DatePeriod {
     /// ```
     /// use range_date::range_type::DatePeriod;
     ///
-    /// let year_period = DatePeriod::year(2024).unwrap();
+    /// let year_period = DatePeriod::year(2024);
     /// assert_eq!(year_period.short_name(), "Y");
     ///
     /// let month_period = DatePeriod::month(2024, 2).unwrap();
@@ -560,7 +560,7 @@ impl DatePeriod {
     /// ```
     /// use range_date::range_type::DatePeriod;
     ///
-    /// let year_period = DatePeriod::year(2024).unwrap();
+    /// let year_period = DatePeriod::year(2024);
     /// assert_eq!(year_period.period_name(), "YEAR");
     ///
     /// let month_period = DatePeriod::month(2024, 2).unwrap();
