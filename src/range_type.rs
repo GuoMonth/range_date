@@ -678,13 +678,13 @@ impl DatePeriod {
     /// use range_date::range_type::DatePeriod;
     ///
     /// let quarter = DatePeriod::quarter(2024, 1).unwrap();
-    /// let months = quarter.decompose().unwrap();
+    /// let months = quarter.decompose();
     /// assert_eq!(months.len(), 3);
     /// assert_eq!(months[0].to_string(), "2024M1");
     /// assert_eq!(months[2].to_string(), "2024M3");
     /// ```
-    pub fn decompose(&self) -> anyhow::Result<Vec<DatePeriod>> {
-        Ok(match self {
+    pub fn decompose(&self) -> Vec<DatePeriod> {
+        match self {
             DatePeriod::Year(year) => (1..=4)
                 .map(|q| match DatePeriod::quarter(*year, q) {
                     Ok(period) => period,
@@ -714,7 +714,7 @@ impl DatePeriod {
                     .collect()
             }
             DatePeriod::Daily(_, _) => vec![],
-        })
+        }
     }
 
     /// Aggregate this period to its direct parent period
@@ -725,39 +725,39 @@ impl DatePeriod {
     /// use range_date::range_type::DatePeriod;
     ///
     /// let daily = DatePeriod::daily(2024, 32).unwrap();
-    /// let month = daily.aggregate().unwrap();
-    /// assert_eq!(month, Some(DatePeriod::month(2024, 2).unwrap()));
+    /// let month = daily.aggregate();
+    /// assert_eq!(month, DatePeriod::month(2024, 2).unwrap());
     ///
     /// let quarter = DatePeriod::quarter(2024, 2).unwrap();
-    /// let year = quarter.aggregate().unwrap();
-    /// assert_eq!(year, Some(DatePeriod::year(2024)));
+    /// let year = quarter.aggregate();
+    /// assert_eq!(year, DatePeriod::year(2024));
     ///
     /// let year_period = DatePeriod::year(2024);
-    /// let parent = year_period.aggregate().unwrap();
-    /// assert_eq!(parent, None); // Year has no parent
+    /// let parent = year_period.aggregate();
+    /// assert_eq!(parent, year_period); // Year has no parent, remains the same
     /// ```
-    pub fn aggregate(&self) -> anyhow::Result<Option<DatePeriod>> {
-        Ok(match self {
-            DatePeriod::Year(_) => None,
-            DatePeriod::Quarter(year, _) => Some(DatePeriod::year(*year)),
+    pub fn aggregate(&self) -> DatePeriod {
+        match self {
+            DatePeriod::Year(_) => self.clone(),
+            DatePeriod::Quarter(year, _) => DatePeriod::year(*year),
             DatePeriod::Month(year, month) => {
                 let quarter = ((month - 1) / 3) + 1;
-                Some(match DatePeriod::quarter(*year, quarter) {
+                match DatePeriod::quarter(*year, quarter) {
                     Ok(period) => period,
                     Err(_) => unreachable!("quarter should always succeed for valid quarter"),
-                })
+                }
             }
             DatePeriod::Daily(year, day) => {
                 let date = match NaiveDate::from_yo_opt(*year as i32, *day) {
                     Some(d) => d,
                     None => unreachable!("from_yo_opt should succeed for valid year and day"),
                 };
-                Some(match DatePeriod::month(date.year() as u32, date.month()) {
+                match DatePeriod::month(date.year() as u32, date.month()) {
                     Ok(period) => period,
                     Err(_) => unreachable!("month should always succeed for valid month"),
-                })
+                }
             }
-        })
+        }
     }
 }
 
@@ -1066,30 +1066,30 @@ mod tests {
     #[test]
     fn test_decompose() {
         // Test year
-        let year_decomposed = DatePeriod::year(2025).decompose().unwrap();
+        let year_decomposed = DatePeriod::year(2025).decompose();
         assert_eq!(year_decomposed.len(), 4);
         assert_eq!(year_decomposed[0], DatePeriod::Quarter(2025, 1));
         assert_eq!(year_decomposed[3], DatePeriod::Quarter(2025, 4));
 
         // Test quarter
-        let quarter_decomposed = DatePeriod::quarter(2025, 4).unwrap().decompose().unwrap();
+        let quarter_decomposed = DatePeriod::quarter(2025, 4).unwrap().decompose();
         assert_eq!(quarter_decomposed.len(), 3);
         assert_eq!(quarter_decomposed[0], DatePeriod::Month(2025, 10));
         assert_eq!(quarter_decomposed[2], DatePeriod::Month(2025, 12));
 
         // Test month (non-leap)
-        let month_decomposed = DatePeriod::month(2023, 2).unwrap().decompose().unwrap();
+        let month_decomposed = DatePeriod::month(2023, 2).unwrap().decompose();
         assert_eq!(month_decomposed.len(), 28);
         assert_eq!(month_decomposed[0], DatePeriod::Daily(2023, 1));
         assert_eq!(month_decomposed[27], DatePeriod::Daily(2023, 28));
 
         // Test month (leap)
-        let leap_month_decomposed = DatePeriod::month(2024, 2).unwrap().decompose().unwrap();
+        let leap_month_decomposed = DatePeriod::month(2024, 2).unwrap().decompose();
         assert_eq!(leap_month_decomposed.len(), 29);
         assert_eq!(leap_month_decomposed[28], DatePeriod::Daily(2024, 29));
 
         // Test daily
-        let daily_decomposed = DatePeriod::daily(2024, 1).unwrap().decompose().unwrap();
+        let daily_decomposed = DatePeriod::daily(2024, 1).unwrap().decompose();
         assert_eq!(daily_decomposed.len(), 0);
     }
 
@@ -1097,24 +1097,24 @@ mod tests {
     fn test_aggregate() {
         // Test daily
         assert_eq!(
-            DatePeriod::daily(2024, 32).unwrap().aggregate().unwrap(),
-            Some(DatePeriod::Month(2024, 2))
+            DatePeriod::daily(2024, 32).unwrap().aggregate(),
+            DatePeriod::Month(2024, 2)
         );
 
         // Test month
         assert_eq!(
-            DatePeriod::month(2025, 10).unwrap().aggregate().unwrap(),
-            Some(DatePeriod::Quarter(2025, 4))
+            DatePeriod::month(2025, 10).unwrap().aggregate(),
+            DatePeriod::Quarter(2025, 4)
         );
 
         // Test quarter
         assert_eq!(
-            DatePeriod::quarter(2025, 4).unwrap().aggregate().unwrap(),
-            Some(DatePeriod::Year(2025))
+            DatePeriod::quarter(2025, 4).unwrap().aggregate(),
+            DatePeriod::Year(2025)
         );
 
         // Test year
-        assert_eq!(DatePeriod::year(2025).aggregate().unwrap(), None);
+        assert_eq!(DatePeriod::year(2025).aggregate(), DatePeriod::Year(2025));
     }
 
     #[test]
