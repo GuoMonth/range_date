@@ -1,4 +1,4 @@
-use chrono::{Datelike, Months, NaiveDate};
+use chrono::{Datelike, Duration, Months, NaiveDate};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::leap_year;
@@ -56,12 +56,30 @@ impl std::fmt::Display for DatePeriod {
 
 impl DatePeriod {
     /// Create a new yearly period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year = DatePeriod::year(2024);
+    /// assert_eq!(year.to_string(), "2024Y");
+    /// ```
     pub fn year(year: u32) -> Self {
         DatePeriod::Year(year)
     }
 
     /// Create a new quarterly period with validation
     /// Quarter must be between 1 and 4
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let quarter = DatePeriod::quarter(2024, 2).unwrap();
+    /// assert_eq!(quarter.to_string(), "2024Q2");
+    /// ```
     pub fn quarter(year: u32, quarter: u32) -> anyhow::Result<Self> {
         if !(1..=4).contains(&quarter) {
             return Err(anyhow::anyhow!(
@@ -74,6 +92,15 @@ impl DatePeriod {
 
     /// Create a new monthly period with validation
     /// Month must be between 1 and 12
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let month = DatePeriod::month(2024, 5).unwrap();
+    /// assert_eq!(month.to_string(), "2024M5");
+    /// ```
     pub fn month(year: u32, month: u32) -> anyhow::Result<Self> {
         if !(1..=12).contains(&month) {
             return Err(anyhow::anyhow!(
@@ -86,6 +113,15 @@ impl DatePeriod {
 
     /// Create a new daily period with validation
     /// Day must be between 1 and 366 (accounting for leap years)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let daily = DatePeriod::daily(2024, 136).unwrap();
+    /// assert_eq!(daily.to_string(), "2024D136");
+    /// ```
     pub fn daily(year: u32, day: u32) -> anyhow::Result<Self> {
         if day == 0 {
             return Err(anyhow::anyhow!("Day must be greater than 0"));
@@ -105,6 +141,15 @@ impl DatePeriod {
 
     /// Parse a DatePeriod from a string representation like "2024Q2"
     /// Format: YYYYT[#] where T is period type (Y/Q/M/D) and # is the index (optional for Y)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::parse("2024Q2").unwrap();
+    /// assert_eq!(period.to_string(), "2024Q2");
+    /// ```
     pub fn parse(s: &str) -> anyhow::Result<Self> {
         let s = s.trim();
         if s.len() < 5 {
@@ -148,11 +193,33 @@ impl DatePeriod {
     }
 
     /// Convert a NaiveDate to a yearly DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let year = DatePeriod::from_date_as_year(date);
+    /// assert_eq!(year.to_string(), "2024Y");
+    /// ```
     pub fn from_date_as_year(date: NaiveDate) -> Self {
         Self::year(date.year() as u32)
     }
 
     /// Convert a NaiveDate to a quarterly DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let quarter = DatePeriod::from_date_as_quarter(date);
+    /// assert_eq!(quarter.to_string(), "2024Q2");
+    /// ```
     pub fn from_date_as_quarter(date: NaiveDate) -> Self {
         let year = date.year() as u32;
         let month = date.month();
@@ -167,19 +234,175 @@ impl DatePeriod {
     }
 
     /// Convert a NaiveDate to a monthly DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let month = DatePeriod::from_date_as_month(date);
+    /// assert_eq!(month.to_string(), "2024M5");
+    /// ```
     pub fn from_date_as_month(date: NaiveDate) -> Self {
         DatePeriod::Month(date.year() as u32, date.month())
     }
 
     /// Convert a NaiveDate to a daily DatePeriod
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2024, 5, 15).unwrap();
+    /// let daily = DatePeriod::from_date_as_daily(date);
+    /// assert_eq!(daily.to_string(), "2024D136");
+    /// ```
     pub fn from_date_as_daily(date: NaiveDate) -> Self {
         DatePeriod::Daily(date.year() as u32, date.ordinal())
+    }
+
+    /// Generate all yearly periods between two dates (inclusive)
+    /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2023, 6, 15).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2025, 3, 10).unwrap();
+    /// let years = DatePeriod::between_date_as_year(start, end).unwrap();
+    /// assert_eq!(years.len(), 3);
+    /// assert_eq!(years[0].to_string(), "2023Y");
+    /// ```
+    pub fn between_date_as_year(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
+        if start > end {
+            return Ok(vec![]);
+        }
+        let start_year = start.year() as u32;
+        let end_year = end.year() as u32;
+        Ok((start_year..=end_year).map(DatePeriod::year).collect())
+    }
+
+    /// Generate all quarterly periods between two dates (inclusive)
+    /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2024, 4, 1).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2024, 9, 30).unwrap();
+    /// let quarters = DatePeriod::between_date_as_quarter(start, end).unwrap();
+    /// assert_eq!(quarters.len(), 2);
+    /// assert_eq!(quarters[0].to_string(), "2024Q2");
+    /// ```
+    pub fn between_date_as_quarter(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
+        if start > end {
+            return Ok(vec![]);
+        }
+        let mut result = vec![];
+        let mut current = DatePeriod::from_date_as_quarter(start);
+        let end_quarter = DatePeriod::from_date_as_quarter(end);
+        while current <= end_quarter {
+            result.push(current.clone());
+            current = current.succ()?;
+        }
+        Ok(result)
+    }
+
+    /// Generate all monthly periods between two dates (inclusive)
+    /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2024, 2, 1).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2024, 4, 30).unwrap();
+    /// let months = DatePeriod::between_date_as_month(start, end).unwrap();
+    /// assert_eq!(months.len(), 3);
+    /// assert_eq!(months[0].to_string(), "2024M2");
+    /// ```
+    pub fn between_date_as_month(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
+        if start > end {
+            return Ok(vec![]);
+        }
+        let mut result = vec![];
+        let mut current = DatePeriod::from_date_as_month(start);
+        let end_month = DatePeriod::from_date_as_month(end);
+        while current <= end_month {
+            result.push(current.clone());
+            current = current.succ()?;
+        }
+        Ok(result)
+    }
+
+    /// Generate all daily periods between two dates (inclusive)
+    /// Returns an empty vector if start > end
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let start = NaiveDate::from_ymd_opt(2024, 2, 1).unwrap();
+    /// let end = NaiveDate::from_ymd_opt(2024, 2, 3).unwrap();
+    /// let days = DatePeriod::between_date_as_daily(start, end).unwrap();
+    /// assert_eq!(days.len(), 3);
+    /// assert_eq!(days[0].to_string(), "2024D32");
+    /// ```
+    pub fn between_date_as_daily(
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> anyhow::Result<Vec<DatePeriod>> {
+        if start > end {
+            return Ok(vec![]);
+        }
+        let mut result = vec![];
+        let mut current = DatePeriod::from_date_as_daily(start);
+        let end_daily = DatePeriod::from_date_as_daily(end);
+        while current <= end_daily {
+            result.push(current.clone());
+            current = current.succ()?;
+        }
+        Ok(result)
     }
 
     /// Get the first day of this period
     ///
     /// Returns the first date of the period. Since DatePeriod instances should only
     /// be created through validated constructors, this should always succeed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let first_day = period.get_first_day().unwrap();
+    /// assert_eq!(first_day, NaiveDate::from_ymd_opt(2024, 2, 1).unwrap());
+    /// ```
     pub fn get_first_day(&self) -> anyhow::Result<NaiveDate> {
         match self {
             DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 1, 1)
@@ -202,6 +425,17 @@ impl DatePeriod {
     /// Get the last day of this period
     ///
     /// Returns the last date of the period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let last_day = period.get_last_day().unwrap();
+    /// assert_eq!(last_day, NaiveDate::from_ymd_opt(2024, 2, 29).unwrap()); // 2024 is leap year
+    /// ```
     pub fn get_last_day(&self) -> anyhow::Result<NaiveDate> {
         match self {
             DatePeriod::Year(year) => NaiveDate::from_ymd_opt(*year as i32, 12, 31)
@@ -236,6 +470,19 @@ impl DatePeriod {
     /// Check if this period contains the given date
     ///
     /// Returns false if there's an error calculating the date boundaries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    /// use chrono::NaiveDate;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let date_in_period = NaiveDate::from_ymd_opt(2024, 2, 15).unwrap();
+    /// let date_outside_period = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
+    /// assert!(period.contains_date(date_in_period));
+    /// assert!(!period.contains_date(date_outside_period));
+    /// ```
     pub fn contains_date(&self, date: NaiveDate) -> bool {
         match (self.get_first_day(), self.get_last_day()) {
             (Ok(first), Ok(last)) => date >= first && date <= last,
@@ -244,6 +491,15 @@ impl DatePeriod {
     }
 
     /// Get the year component
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(period.get_year(), 2024);
+    /// ```
     pub fn get_year(&self) -> u32 {
         match self {
             DatePeriod::Year(year) => *year,
@@ -254,6 +510,18 @@ impl DatePeriod {
     }
 
     /// Get the period value (quarter number, month number, or day number)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year_period = DatePeriod::year(2024);
+    /// assert_eq!(year_period.value(), 2024);
+    ///
+    /// let month_period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(month_period.value(), 2);
+    /// ```
     pub fn value(&self) -> u32 {
         match self {
             DatePeriod::Year(year) => *year,
@@ -264,6 +532,18 @@ impl DatePeriod {
     }
 
     /// Get the short name of the period type
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year_period = DatePeriod::year(2024);
+    /// assert_eq!(year_period.short_name(), "Y");
+    ///
+    /// let month_period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(month_period.short_name(), "M");
+    /// ```
     pub fn short_name(&self) -> &'static str {
         match self {
             DatePeriod::Year(_) => "Y",
@@ -274,6 +554,18 @@ impl DatePeriod {
     }
 
     /// Get the full name of the period type
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let year_period = DatePeriod::year(2024);
+    /// assert_eq!(year_period.period_name(), "YEAR");
+    ///
+    /// let month_period = DatePeriod::month(2024, 2).unwrap();
+    /// assert_eq!(month_period.period_name(), "MONTH");
+    /// ```
     pub fn period_name(&self) -> &'static str {
         match self {
             DatePeriod::Year(_) => "YEAR",
@@ -281,6 +573,191 @@ impl DatePeriod {
             DatePeriod::Month(_, _) => "MONTH",
             DatePeriod::Daily(_, _) => "DAILY",
         }
+    }
+
+    /// Get the successor (next) period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let next_period = period.succ().unwrap();
+    /// assert_eq!(next_period.to_string(), "2024M3");
+    /// ```
+    pub fn succ(&self) -> anyhow::Result<DatePeriod> {
+        Ok(match self {
+            DatePeriod::Year(year) => DatePeriod::Year(year + 1),
+            DatePeriod::Quarter(year, quarter) => {
+                if *quarter < 4 {
+                    DatePeriod::Quarter(*year, quarter + 1)
+                } else {
+                    DatePeriod::Quarter(year + 1, 1)
+                }
+            }
+            DatePeriod::Month(year, month) => {
+                if *month < 12 {
+                    DatePeriod::Month(*year, month + 1)
+                } else {
+                    DatePeriod::Month(year + 1, 1)
+                }
+            }
+            DatePeriod::Daily(year, day) => {
+                let max_days = if leap_year(*year as i32) { 366 } else { 365 };
+                if *day < max_days {
+                    DatePeriod::Daily(*year, day + 1)
+                } else {
+                    DatePeriod::Daily(year + 1, 1)
+                }
+            }
+        })
+    }
+
+    /// Get the predecessor (previous) period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let prev_period = period.pred().unwrap();
+    /// assert_eq!(prev_period.to_string(), "2024M1");
+    /// ```
+    pub fn pred(&self) -> anyhow::Result<DatePeriod> {
+        Ok(match self {
+            DatePeriod::Year(year) => {
+                if *year > 0 {
+                    DatePeriod::Year(year - 1)
+                } else {
+                    anyhow::bail!("No predecessor for year 0");
+                }
+            }
+            DatePeriod::Quarter(year, quarter) => {
+                if *quarter > 1 {
+                    DatePeriod::Quarter(*year, quarter - 1)
+                } else if *year > 0 {
+                    DatePeriod::Quarter(year - 1, 4)
+                } else {
+                    anyhow::bail!("No predecessor for quarter 1 of year 0");
+                }
+            }
+            DatePeriod::Month(year, month) => {
+                if *month > 1 {
+                    DatePeriod::Month(*year, month - 1)
+                } else if *year > 0 {
+                    DatePeriod::Month(year - 1, 12)
+                } else {
+                    anyhow::bail!("No predecessor for month 1 of year 0");
+                }
+            }
+            DatePeriod::Daily(year, day) => {
+                if *day > 1 {
+                    DatePeriod::Daily(*year, day - 1)
+                } else if *year > 0 {
+                    let prev_year = year - 1;
+                    let max_days_prev = if leap_year(prev_year as i32) {
+                        366
+                    } else {
+                        365
+                    };
+                    DatePeriod::Daily(prev_year, max_days_prev)
+                } else {
+                    anyhow::bail!("No predecessor for day 1 of year 0");
+                }
+            }
+        })
+    }
+
+    /// Decompose this period into its direct sub-periods
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let quarter = DatePeriod::quarter(2024, 1).unwrap();
+    /// let months = quarter.decompose().unwrap();
+    /// assert_eq!(months.len(), 3);
+    /// assert_eq!(months[0].to_string(), "2024M1");
+    /// assert_eq!(months[2].to_string(), "2024M3");
+    /// ```
+    pub fn decompose(&self) -> anyhow::Result<Vec<DatePeriod>> {
+        Ok(match self {
+            DatePeriod::Year(year) => (1..=4)
+                .map(|q| match DatePeriod::quarter(*year, q) {
+                    Ok(period) => period,
+                    Err(_) => unreachable!("quarter should always succeed for valid q"),
+                })
+                .collect(),
+            DatePeriod::Quarter(year, quarter) => {
+                let start_month = (quarter - 1) * 3 + 1;
+                (0..3)
+                    .map(|i| match DatePeriod::month(*year, start_month + i) {
+                        Ok(period) => period,
+                        Err(_) => unreachable!("month should always succeed for valid month"),
+                    })
+                    .collect()
+            }
+            DatePeriod::Month(year, month) => {
+                let first_day = match NaiveDate::from_ymd_opt(*year as i32, *month, 1) {
+                    Some(date) => date,
+                    None => unreachable!("from_ymd_opt should succeed for valid year and month"),
+                };
+                let last_day = first_day + Months::new(1) - Duration::days(1);
+                (1..=last_day.day())
+                    .map(|d| match DatePeriod::daily(*year, d) {
+                        Ok(period) => period,
+                        Err(_) => unreachable!("daily should always succeed for valid day"),
+                    })
+                    .collect()
+            }
+            DatePeriod::Daily(_, _) => vec![],
+        })
+    }
+
+    /// Aggregate this period to its direct parent period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let daily = DatePeriod::daily(2024, 32).unwrap();
+    /// let month = daily.aggregate().unwrap();
+    /// assert_eq!(month, Some(DatePeriod::month(2024, 2).unwrap()));
+    ///
+    /// let quarter = DatePeriod::quarter(2024, 2).unwrap();
+    /// let year = quarter.aggregate().unwrap();
+    /// assert_eq!(year, Some(DatePeriod::year(2024)));
+    ///
+    /// let year_period = DatePeriod::year(2024);
+    /// let parent = year_period.aggregate().unwrap();
+    /// assert_eq!(parent, None); // Year has no parent
+    /// ```
+    pub fn aggregate(&self) -> anyhow::Result<Option<DatePeriod>> {
+        Ok(match self {
+            DatePeriod::Year(_) => None,
+            DatePeriod::Quarter(year, _) => Some(DatePeriod::year(*year)),
+            DatePeriod::Month(year, month) => {
+                let quarter = ((month - 1) / 3) + 1;
+                Some(match DatePeriod::quarter(*year, quarter) {
+                    Ok(period) => period,
+                    Err(_) => unreachable!("quarter should always succeed for valid quarter"),
+                })
+            }
+            DatePeriod::Daily(year, day) => {
+                let date = match NaiveDate::from_yo_opt(*year as i32, *day) {
+                    Some(d) => d,
+                    None => unreachable!("from_yo_opt should succeed for valid year and day"),
+                };
+                Some(match DatePeriod::month(date.year() as u32, date.month()) {
+                    Ok(period) => period,
+                    Err(_) => unreachable!("month should always succeed for valid month"),
+                })
+            }
+        })
     }
 }
 
@@ -498,5 +975,252 @@ mod tests {
         // Non-leap year - only 365 days allowed
         assert!(DatePeriod::daily(2023, 365).is_ok());
         assert!(DatePeriod::daily(2023, 366).is_err());
+    }
+
+    #[test]
+    fn test_succ() {
+        // Test year
+        assert_eq!(
+            DatePeriod::year(2024).succ().unwrap(),
+            DatePeriod::Year(2025)
+        );
+
+        // Test quarter
+        assert_eq!(
+            DatePeriod::quarter(2024, 2).unwrap().succ().unwrap(),
+            DatePeriod::Quarter(2024, 3)
+        );
+        assert_eq!(
+            DatePeriod::quarter(2024, 4).unwrap().succ().unwrap(),
+            DatePeriod::Quarter(2025, 1)
+        );
+
+        // Test month
+        assert_eq!(
+            DatePeriod::month(2024, 5).unwrap().succ().unwrap(),
+            DatePeriod::Month(2024, 6)
+        );
+        assert_eq!(
+            DatePeriod::month(2024, 12).unwrap().succ().unwrap(),
+            DatePeriod::Month(2025, 1)
+        );
+
+        // Test daily
+        assert_eq!(
+            DatePeriod::daily(2024, 135).unwrap().succ().unwrap(),
+            DatePeriod::Daily(2024, 136)
+        );
+        assert_eq!(
+            DatePeriod::daily(2024, 366).unwrap().succ().unwrap(),
+            DatePeriod::Daily(2025, 1)
+        ); // Leap year
+        assert_eq!(
+            DatePeriod::daily(2023, 365).unwrap().succ().unwrap(),
+            DatePeriod::Daily(2024, 1)
+        ); // Non-leap
+    }
+
+    #[test]
+    fn test_pred() {
+        // Test year
+        assert_eq!(
+            DatePeriod::year(2024).pred().unwrap(),
+            DatePeriod::Year(2023)
+        );
+        assert_eq!(DatePeriod::year(0).pred().is_err(), true);
+
+        // Test quarter
+        assert_eq!(
+            DatePeriod::quarter(2024, 2).unwrap().pred().unwrap(),
+            DatePeriod::Quarter(2024, 1)
+        );
+        assert_eq!(
+            DatePeriod::quarter(2024, 1).unwrap().pred().unwrap(),
+            DatePeriod::Quarter(2023, 4)
+        );
+        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred().is_err(), true);
+
+        // Test month
+        assert_eq!(
+            DatePeriod::month(2024, 5).unwrap().pred().unwrap(),
+            DatePeriod::Month(2024, 4)
+        );
+        assert_eq!(
+            DatePeriod::month(2024, 1).unwrap().pred().unwrap(),
+            DatePeriod::Month(2023, 12)
+        );
+        assert_eq!(DatePeriod::month(0, 1).unwrap().pred().is_err(), true);
+
+        // Test daily
+        assert_eq!(
+            DatePeriod::daily(2024, 135).unwrap().pred().unwrap(),
+            DatePeriod::Daily(2024, 134)
+        );
+        assert_eq!(
+            DatePeriod::daily(2024, 1).unwrap().pred().unwrap(),
+            DatePeriod::Daily(2023, 365)
+        ); // From leap to non-leap
+        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred().is_err(), true);
+    }
+
+    #[test]
+    fn test_decompose() {
+        // Test year
+        let year_decomposed = DatePeriod::year(2025).decompose().unwrap();
+        assert_eq!(year_decomposed.len(), 4);
+        assert_eq!(year_decomposed[0], DatePeriod::Quarter(2025, 1));
+        assert_eq!(year_decomposed[3], DatePeriod::Quarter(2025, 4));
+
+        // Test quarter
+        let quarter_decomposed = DatePeriod::quarter(2025, 4).unwrap().decompose().unwrap();
+        assert_eq!(quarter_decomposed.len(), 3);
+        assert_eq!(quarter_decomposed[0], DatePeriod::Month(2025, 10));
+        assert_eq!(quarter_decomposed[2], DatePeriod::Month(2025, 12));
+
+        // Test month (non-leap)
+        let month_decomposed = DatePeriod::month(2023, 2).unwrap().decompose().unwrap();
+        assert_eq!(month_decomposed.len(), 28);
+        assert_eq!(month_decomposed[0], DatePeriod::Daily(2023, 1));
+        assert_eq!(month_decomposed[27], DatePeriod::Daily(2023, 28));
+
+        // Test month (leap)
+        let leap_month_decomposed = DatePeriod::month(2024, 2).unwrap().decompose().unwrap();
+        assert_eq!(leap_month_decomposed.len(), 29);
+        assert_eq!(leap_month_decomposed[28], DatePeriod::Daily(2024, 29));
+
+        // Test daily
+        let daily_decomposed = DatePeriod::daily(2024, 1).unwrap().decompose().unwrap();
+        assert_eq!(daily_decomposed.len(), 0);
+    }
+
+    #[test]
+    fn test_aggregate() {
+        // Test daily
+        assert_eq!(
+            DatePeriod::daily(2024, 32).unwrap().aggregate().unwrap(),
+            Some(DatePeriod::Month(2024, 2))
+        );
+
+        // Test month
+        assert_eq!(
+            DatePeriod::month(2025, 10).unwrap().aggregate().unwrap(),
+            Some(DatePeriod::Quarter(2025, 4))
+        );
+
+        // Test quarter
+        assert_eq!(
+            DatePeriod::quarter(2025, 4).unwrap().aggregate().unwrap(),
+            Some(DatePeriod::Year(2025))
+        );
+
+        // Test year
+        assert_eq!(DatePeriod::year(2025).aggregate().unwrap(), None);
+    }
+
+    #[test]
+    fn test_between_date_as_year() {
+        let start = NaiveDate::from_ymd_opt(2023, 6, 15).unwrap();
+        let end = NaiveDate::from_ymd_opt(2025, 3, 10).unwrap();
+
+        let result = DatePeriod::between_date_as_year(start, end).unwrap();
+        assert_eq!(
+            result,
+            vec![
+                DatePeriod::Year(2023),
+                DatePeriod::Year(2024),
+                DatePeriod::Year(2025)
+            ]
+        );
+
+        // Same year
+        let same = DatePeriod::between_date_as_year(start, start).unwrap();
+        assert_eq!(same, vec![DatePeriod::Year(2023)]);
+
+        // Start > end
+        let result_empty = DatePeriod::between_date_as_year(end, start).unwrap();
+        assert_eq!(result_empty, vec![]);
+    }
+
+    #[test]
+    fn test_between_date_as_quarter() {
+        let start = NaiveDate::from_ymd_opt(2024, 4, 1).unwrap(); // Q2 2024
+        let end = NaiveDate::from_ymd_opt(2024, 9, 30).unwrap(); // Q3 2024
+
+        let result = DatePeriod::between_date_as_quarter(start, end).unwrap();
+        assert_eq!(
+            result,
+            vec![DatePeriod::Quarter(2024, 2), DatePeriod::Quarter(2024, 3)]
+        );
+
+        // Cross year
+        let start_cross = NaiveDate::from_ymd_opt(2024, 10, 1).unwrap(); // Q4 2024
+        let end_cross = NaiveDate::from_ymd_opt(2025, 3, 31).unwrap(); // Q1 2025
+        let result_cross = DatePeriod::between_date_as_quarter(start_cross, end_cross).unwrap();
+        assert_eq!(
+            result_cross,
+            vec![DatePeriod::Quarter(2024, 4), DatePeriod::Quarter(2025, 1)]
+        );
+
+        // Start > end
+        let result_empty = DatePeriod::between_date_as_quarter(end, start).unwrap();
+        assert_eq!(result_empty, vec![]);
+    }
+
+    #[test]
+    fn test_between_date_as_month() {
+        let start = NaiveDate::from_ymd_opt(2024, 2, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 4, 30).unwrap();
+
+        let result = DatePeriod::between_date_as_month(start, end).unwrap();
+        assert_eq!(
+            result,
+            vec![
+                DatePeriod::Month(2024, 2),
+                DatePeriod::Month(2024, 3),
+                DatePeriod::Month(2024, 4)
+            ]
+        );
+
+        // Cross year
+        let start_cross = NaiveDate::from_ymd_opt(2024, 11, 1).unwrap();
+        let end_cross = NaiveDate::from_ymd_opt(2025, 1, 31).unwrap();
+        let result_cross = DatePeriod::between_date_as_month(start_cross, end_cross).unwrap();
+        assert_eq!(
+            result_cross,
+            vec![
+                DatePeriod::Month(2024, 11),
+                DatePeriod::Month(2024, 12),
+                DatePeriod::Month(2025, 1)
+            ]
+        );
+
+        // Start > end
+        let result_empty = DatePeriod::between_date_as_month(end, start).unwrap();
+        assert_eq!(result_empty, vec![]);
+    }
+
+    #[test]
+    fn test_between_date_as_daily() {
+        let start = NaiveDate::from_ymd_opt(2024, 2, 28).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 3, 2).unwrap();
+
+        let result = DatePeriod::between_date_as_daily(start, end).unwrap();
+        assert_eq!(
+            result,
+            vec![
+                DatePeriod::Daily(2024, 59), // Feb 28
+                DatePeriod::Daily(2024, 60), // Feb 29 (leap)
+                DatePeriod::Daily(2024, 61), // Mar 1
+                DatePeriod::Daily(2024, 62)  // Mar 2
+            ]
+        );
+
+        // Same day
+        let same = DatePeriod::between_date_as_daily(start, start).unwrap();
+        assert_eq!(same, vec![DatePeriod::Daily(2024, 59)]);
+
+        // Start > end
+        let result_empty = DatePeriod::between_date_as_daily(end, start).unwrap();
+        assert_eq!(result_empty, vec![]);
     }
 }

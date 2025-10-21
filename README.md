@@ -114,6 +114,48 @@ let deserialized: DatePeriod = serde_json::from_str(&json).unwrap();
 assert_eq!(deserialized, DatePeriod::Quarter(2024, 2));
 ```
 
+### Advanced Period Operations **[NEW]**
+
+```rust
+use range_date::range_type::DatePeriod;
+use chrono::NaiveDate;
+
+// Range generation - Generate all periods between two dates
+let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+let end = NaiveDate::from_ymd_opt(2024, 6, 30).unwrap();
+let quarters = DatePeriod::between_date_as_quarter(start, end).unwrap();
+assert_eq!(quarters.len(), 2); // Q1 and Q2 2024
+
+// Period navigation - Get next/previous periods
+let q1 = DatePeriod::quarter(2024, 1).unwrap();
+let q2 = q1.succ().unwrap(); // Next: 2024Q2
+let back_to_q1 = q2.pred().unwrap(); // Previous: 2024Q1
+
+// Period decomposition - Break down into sub-periods
+let year_2024 = DatePeriod::year(2024);
+let quarters_in_year = year_2024.decompose().unwrap();
+assert_eq!(quarters_in_year.len(), 4); // 4 quarters in a year
+
+// Period aggregation - Get parent period
+let month = DatePeriod::month(2024, 5).unwrap();
+let quarter = month.aggregate().unwrap();
+assert_eq!(quarter, Some(DatePeriod::quarter(2024, 2).unwrap()));
+```
+
+### Period Information Queries **[NEW]**
+
+```rust
+use range_date::range_type::DatePeriod;
+
+let period = DatePeriod::quarter(2024, 2).unwrap();
+
+// Query period information
+assert_eq!(period.get_year(), 2024);
+assert_eq!(period.value(), 2); // Quarter number
+assert_eq!(period.short_name(), "Q");
+assert_eq!(period.period_name(), "QUARTER");
+```
+
 ## Date Range Format
 
 The crate uses a compact string format for date periods:
@@ -133,37 +175,6 @@ The crate uses a compact string format for date periods:
 | Quarter | `DatePeriod::quarter(2024, 1)` | `2024Q1` | Q1: Jan-Mar, Q2: Apr-Jun, etc. |
 | Month | `DatePeriod::month(2024, 3)` | `2024M3` | Specific month (1-12) |
 | Daily | `DatePeriod::daily(2024, 60)` | `2024D60` | Specific day of year (1-366) |
-
-## Version Upgrade Guide
-
-### v0.2.0 - Major Testing Infrastructure Improvements
-
-**⚠️ Breaking Changes:**
-
-- **Testing Migration**: All example code has been converted to proper test cases in the `tests/` directory.
-
-**Why This Change?**
-
-1. **Better Development Experience**: Tests can now be run with simple `cargo test`
-2. **Improved CI/CD**: Integration with continuous integration pipelines is now seamless
-3. **Enhanced Maintainability**: Test code is better organized and easier to maintain
-4. **Performance**: Tests run in parallel, significantly faster than sequential example execution
-
-
-**New Testing Structure:**
-```
-tests/
-├── year_format_tests.rs      # Year format functionality tests
-├── integration_tests.rs      # Comprehensive usage examples as tests  
-└── comprehensive_tests.rs    # Edge cases and boundary tests
-```
-
-**Benefits:**
-- ✅ **29 comprehensive tests** covering all functionality
-- ✅ **Parallel execution** for faster feedback
-- ✅ **Better error reporting** with precise test failure information
-- ✅ **Hand-verification support** with `--nocapture` flag to see debug output
-- ✅ **CI/CD ready** for automated testing pipelines
 
 ## API Documentation
 
