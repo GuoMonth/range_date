@@ -718,6 +718,24 @@ impl DatePeriod {
     }
 
     /// Aggregate this period to its direct parent period
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let daily = DatePeriod::daily(2024, 32).unwrap();
+    /// let month = daily.aggregate().unwrap();
+    /// assert_eq!(month, Some(DatePeriod::month(2024, 2).unwrap()));
+    ///
+    /// let quarter = DatePeriod::quarter(2024, 2).unwrap();
+    /// let year = quarter.aggregate().unwrap();
+    /// assert_eq!(year, Some(DatePeriod::year(2024)));
+    ///
+    /// let year_period = DatePeriod::year(2024);
+    /// let parent = year_period.aggregate().unwrap();
+    /// assert_eq!(parent, None); // Year has no parent
+    /// ```
     pub fn aggregate(&self) -> anyhow::Result<Option<DatePeriod>> {
         Ok(match self {
             DatePeriod::Year(_) => None,
