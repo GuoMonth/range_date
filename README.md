@@ -26,7 +26,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-range_date = "0.2.0"
+range_date = "0.2.1"
 ```
 
 ## Usage Examples
