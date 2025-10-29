@@ -759,6 +759,129 @@ impl DatePeriod {
             }
         }
     }
+
+    /// Get the successor n periods ahead
+    ///
+    /// Returns the period that is n steps ahead of the current period.
+    /// If n is 0, returns the current period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 2).unwrap();
+    /// let next_period = period.succ_n(3).unwrap();
+    /// assert_eq!(next_period.to_string(), "2024M5");
+    /// ```
+    pub fn succ_n(&self, n: u32) -> anyhow::Result<DatePeriod> {
+        if n == 0 {
+            return Ok(self.clone());
+        }
+        Ok(match self {
+            DatePeriod::Year(year) => DatePeriod::Year(year + n),
+            DatePeriod::Quarter(year, quarter) => {
+                let total_quarters = (*year as u64 * 4) + (*quarter as u64 - 1) + n as u64;
+                let new_year = (total_quarters / 4) as u32;
+                let new_quarter = ((total_quarters % 4) + 1) as u32;
+                DatePeriod::Quarter(new_year, new_quarter)
+            }
+            DatePeriod::Month(year, month) => {
+                let total_months = (*year as u64 * 12) + (*month as u64 - 1) + n as u64;
+                let new_year = (total_months / 12) as u32;
+                let new_month = ((total_months % 12) + 1) as u32;
+                DatePeriod::Month(new_year, new_month)
+            }
+            DatePeriod::Daily(year, day) => {
+                let mut current_year = *year;
+                let mut current_day = *day;
+                let mut remaining = n;
+                while remaining > 0 {
+                    let max_days = if leap_year(current_year as i32) {
+                        366
+                    } else {
+                        365
+                    };
+                    if current_day + remaining <= max_days {
+                        current_day += remaining;
+                        break;
+                    } else {
+                        remaining -= max_days - current_day + 1;
+                        current_year += 1;
+                        current_day = 1;
+                    }
+                }
+                DatePeriod::Daily(current_year, current_day)
+            }
+        })
+    }
+
+    /// Get the predecessor n periods back
+    ///
+    /// Returns the period that is n steps back from the current period.
+    /// If n is 0, returns the current period.
+    /// Returns an error if going back would result in an invalid year (less than 0).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 5).unwrap();
+    /// let prev_period = period.pred_n(3).unwrap();
+    /// assert_eq!(prev_period.to_string(), "2024M2");
+    /// ```
+    pub fn pred_n(&self, n: u32) -> anyhow::Result<DatePeriod> {
+        if n == 0 {
+            return Ok(self.clone());
+        }
+        Ok(match self {
+            DatePeriod::Year(year) => {
+                if *year >= n {
+                    DatePeriod::Year(year - n)
+                } else {
+                    anyhow::bail!("Cannot go back {} years from year {}", n, year);
+                }
+            }
+            DatePeriod::Quarter(year, quarter) => {
+                let total_quarters = (*year as i64 * 4) + (*quarter as i64 - 1) - n as i64;
+                if total_quarters < 0 {
+                    anyhow::bail!("Cannot go back {} quarters from {}", n, self);
+                }
+                let new_year = (total_quarters / 4) as u32;
+                let new_quarter = ((total_quarters % 4) + 1) as u32;
+                DatePeriod::Quarter(new_year, new_quarter)
+            }
+            DatePeriod::Month(year, month) => {
+                let total_months = (*year as i64 * 12) + (*month as i64 - 1) - n as i64;
+                if total_months < 0 {
+                    anyhow::bail!("Cannot go back {} months from {}", n, self);
+                }
+                let new_year = (total_months / 12) as u32;
+                let new_month = ((total_months % 12) + 1) as u32;
+                DatePeriod::Month(new_year, new_month)
+            }
+            DatePeriod::Daily(year, day) => {
+                let mut current_year = *year as i32;
+                let mut current_day = *day as i32;
+                let mut remaining = n as i32;
+                while remaining > 0 {
+                    if remaining < current_day {
+                        current_day -= remaining;
+                        remaining = 0;
+                    } else {
+                        remaining -= current_day;
+                        current_year -= 1;
+                        if current_year < 0 {
+                            anyhow::bail!("Cannot go back {} days from {}", n, self);
+                        }
+                        current_day = if leap_year(current_year) { 366 } else { 365 };
+                    }
+                }
+                DatePeriod::Daily(current_year as u32, current_day as u32)
+            }
+        })
+    }
 }
 
 #[cfg(test)]
@@ -1222,5 +1345,93 @@ mod tests {
         // Start > end
         let result_empty = DatePeriod::between_date_as_daily(end, start).unwrap();
         assert_eq!(result_empty, vec![]);
+    }
+
+    #[test]
+    fn test_succ_n_and_pred_n() {
+        // Test succ_n with n=0
+        let period = DatePeriod::month(2024, 5).unwrap();
+        assert_eq!(period.succ_n(0).unwrap(), period);
+
+        // Test pred_n with n=0
+        assert_eq!(period.pred_n(0).unwrap(), period);
+
+        // Test succ_n for Year
+        let year_period = DatePeriod::year(2024);
+        assert_eq!(year_period.succ_n(1).unwrap(), DatePeriod::Year(2025));
+        assert_eq!(year_period.succ_n(5).unwrap(), DatePeriod::Year(2029));
+
+        // Test pred_n for Year
+        assert_eq!(year_period.pred_n(1).unwrap(), DatePeriod::Year(2023));
+        assert_eq!(year_period.pred_n(5).unwrap(), DatePeriod::Year(2019));
+        assert!(DatePeriod::year(2).pred_n(5).is_err()); // Cannot go back beyond 0
+
+        // Test succ_n for Quarter
+        let quarter_period = DatePeriod::quarter(2024, 2).unwrap();
+        assert_eq!(
+            quarter_period.succ_n(1).unwrap(),
+            DatePeriod::Quarter(2024, 3)
+        );
+        assert_eq!(
+            quarter_period.succ_n(3).unwrap(),
+            DatePeriod::Quarter(2025, 1)
+        ); // Cross year
+        assert_eq!(
+            quarter_period.succ_n(10).unwrap(),
+            DatePeriod::Quarter(2026, 4)
+        );
+
+        // Test pred_n for Quarter
+        assert_eq!(
+            quarter_period.pred_n(1).unwrap(),
+            DatePeriod::Quarter(2024, 1)
+        );
+        assert_eq!(
+            quarter_period.pred_n(2).unwrap(),
+            DatePeriod::Quarter(2023, 4)
+        ); // Cross year
+        assert!(DatePeriod::quarter(0, 1).unwrap().pred_n(1).is_err()); // Year 0
+
+        // Test succ_n for Month
+        let month_period = DatePeriod::month(2024, 5).unwrap();
+        assert_eq!(month_period.succ_n(1).unwrap(), DatePeriod::Month(2024, 6));
+        assert_eq!(month_period.succ_n(8).unwrap(), DatePeriod::Month(2025, 1)); // Cross year
+        assert_eq!(month_period.succ_n(20).unwrap(), DatePeriod::Month(2026, 1));
+
+        // Test pred_n for Month
+        assert_eq!(month_period.pred_n(1).unwrap(), DatePeriod::Month(2024, 4));
+        assert_eq!(month_period.pred_n(5).unwrap(), DatePeriod::Month(2023, 12)); // Cross year
+        assert!(DatePeriod::month(0, 1).unwrap().pred_n(1).is_err()); // Year 0
+
+        // Test succ_n for Daily
+        let daily_period = DatePeriod::daily(2024, 365).unwrap(); // Leap year
+        assert_eq!(
+            daily_period.succ_n(1).unwrap(),
+            DatePeriod::Daily(2024, 366)
+        );
+        assert_eq!(daily_period.succ_n(2).unwrap(), DatePeriod::Daily(2025, 1)); // Cross year
+
+        let non_leap_daily = DatePeriod::daily(2023, 365).unwrap();
+        assert_eq!(
+            non_leap_daily.succ_n(1).unwrap(),
+            DatePeriod::Daily(2024, 1)
+        );
+
+        // Test pred_n for Daily
+        let daily_period_2 = DatePeriod::daily(2024, 2).unwrap();
+        assert_eq!(
+            daily_period_2.pred_n(1).unwrap(),
+            DatePeriod::Daily(2024, 1)
+        );
+        assert_eq!(
+            daily_period_2.pred_n(2).unwrap(),
+            DatePeriod::Daily(2023, 365)
+        ); // Cross to non-leap
+        assert!(DatePeriod::daily(0, 1).unwrap().pred_n(1).is_err()); // Year 0
+
+        // Test consistency with succ/pred
+        let test_period = DatePeriod::month(2024, 5).unwrap();
+        assert_eq!(test_period.succ_n(1).unwrap(), test_period.succ().unwrap());
+        assert_eq!(test_period.pred_n(1).unwrap(), test_period.pred().unwrap());
     }
 }
