@@ -13,7 +13,7 @@ A powerful Rust crate for handling date periods with embedded data and comprehen
 - 🔄 **Type Conversion**: String parsing and serialization support with validation
 - 📅 **Date Range Operations**: Calculate first/last days, check date containment
 - 🎯 **Date Conversion**: Convert NaiveDate to any period type
-- 🔀 **Advanced Period Operations**: Navigate between periods (succ/pred), decompose into sub-periods, aggregate to parent periods
+- 🔀 **Advanced Period Operations**: Navigate between periods (succ/pred), decompose into sub-periods, aggregate to parent periods, and bulk navigation (succ_n/pred_n/offset_n)
 - 📊 **Range Generation**: Generate all periods between two dates for comprehensive date range analysis
 - 📚 **Comprehensive Documentation**: 26+ doc tests with practical examples for all public methods
 - ⚡ **High Performance**: Built on top of the efficient `chrono` library
@@ -134,6 +134,12 @@ let q1 = DatePeriod::quarter(2024, 1).unwrap();
 let q2 = q1.succ().unwrap(); // Next: 2024Q2
 let back_to_q1 = q2.pred().unwrap(); // Previous: 2024Q1
 
+// Bulk period navigation - Advance or retreat by multiple steps
+let q4 = q1.succ_n(3).unwrap(); // Advance 3 quarters: 2024Q4
+let back_to_q1_bulk = q4.pred_n(3).unwrap(); // Retreat 3 quarters: 2024Q1
+let offset_q3 = q1.offset_n(2).unwrap(); // Unified offset: 2024Q3
+let offset_back = q4.offset_n(-1).unwrap(); // Unified offset backward: 2024Q3
+
 // Period decomposition - Break down into sub-periods
 let year_2024 = DatePeriod::year(2024);
 let quarters_in_year = year_2024.decompose();
@@ -145,7 +151,7 @@ let quarter = month.aggregate();
 assert_eq!(quarter, DatePeriod::quarter(2024, 2).unwrap());
 ```
 
-### Period Information Queries **[NEW]**
+### Period Information Queries
 
 ```rust
 use range_date::range_type::DatePeriod;
