@@ -882,6 +882,31 @@ impl DatePeriod {
             }
         })
     }
+
+    /// Offset this period by n steps
+    ///
+    /// Positive n advances forward, negative n goes backward.
+    /// If n is 0, returns the current period.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_date::range_type::DatePeriod;
+    ///
+    /// let period = DatePeriod::month(2024, 5).unwrap();
+    /// let next_period = period.offset_n(3).unwrap();
+    /// assert_eq!(next_period.to_string(), "2024M8");
+    ///
+    /// let prev_period = period.offset_n(-3).unwrap();
+    /// assert_eq!(prev_period.to_string(), "2024M2");
+    /// ```
+    pub fn offset_n(&self, n: i32) -> anyhow::Result<DatePeriod> {
+        match n.cmp(&0) {
+            std::cmp::Ordering::Equal => Ok(self.clone()),
+            std::cmp::Ordering::Greater => self.succ_n(n as u32),
+            std::cmp::Ordering::Less => self.pred_n((-n) as u32),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1433,5 +1458,39 @@ mod tests {
         let test_period = DatePeriod::month(2024, 5).unwrap();
         assert_eq!(test_period.succ_n(1).unwrap(), test_period.succ().unwrap());
         assert_eq!(test_period.pred_n(1).unwrap(), test_period.pred().unwrap());
+
+        // Test offset_n
+        // Test n=0
+        assert_eq!(test_period.offset_n(0).unwrap(), test_period);
+
+        // Test positive offset (forward)
+        assert_eq!(
+            test_period.offset_n(1).unwrap(),
+            test_period.succ_n(1).unwrap()
+        );
+        assert_eq!(test_period.offset_n(3).unwrap(), DatePeriod::Month(2024, 8));
+
+        // Test negative offset (backward)
+        assert_eq!(
+            test_period.offset_n(-1).unwrap(),
+            test_period.pred_n(1).unwrap()
+        );
+        assert_eq!(
+            test_period.offset_n(-3).unwrap(),
+            DatePeriod::Month(2024, 2)
+        );
+
+        // Test error cases
+        assert!(DatePeriod::year(1).offset_n(-2).is_err()); // Year 0 error
+
+        // Test consistency with succ_n and pred_n
+        assert_eq!(
+            test_period.offset_n(5).unwrap(),
+            test_period.succ_n(5).unwrap()
+        );
+        assert_eq!(
+            test_period.offset_n(-5).unwrap(),
+            test_period.pred_n(5).unwrap()
+        );
     }
 }
