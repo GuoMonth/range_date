@@ -11,7 +11,7 @@ A Rust crate for handling date periods (year / quarter / month / day) with valid
 
 ```toml
 [dependencies]
-range_date = "0.2.3"
+range_date = "0.2.4"
 ```
 
 ## Period Types
