@@ -72,6 +72,10 @@ impl DatePeriod {
     /// Create a new quarterly period with validation
     /// Quarter must be between 1 and 4
     ///
+    /// # Errors
+    ///
+    /// Returns an error if `quarter` is not in the range `1..=4`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -93,6 +97,10 @@ impl DatePeriod {
     /// Create a new monthly period with validation
     /// Month must be between 1 and 12
     ///
+    /// # Errors
+    ///
+    /// Returns an error if `month` is not in the range `1..=12`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -113,6 +121,11 @@ impl DatePeriod {
 
     /// Create a new daily period with validation
     /// Day must be between 1 and 366 (accounting for leap years)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `day` is `0` or exceeds the number of days in `year`
+    /// (365 for common years, 366 for leap years).
     ///
     /// # Examples
     ///
@@ -139,8 +152,14 @@ impl DatePeriod {
         Ok(DatePeriod::Daily(year, day))
     }
 
-    /// Parse a DatePeriod from a string representation like "2024Q2"
-    /// Format: YYYYT[#] where T is period type (Y/Q/M/D) and # is the index (optional for Y)
+    /// Parse a `DatePeriod` from a string representation like `"2024Q2"`
+    /// Format: `YYYYT[#]` where `T` is period type (Y/Q/M/D) and `#` is the index (optional for Y)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input is shorter than five characters, the year
+    /// or index cannot be parsed, the period type is unknown, or the resulting
+    /// period fails validation (e.g. invalid quarter/month/day).
     ///
     /// # Examples
     ///
@@ -192,7 +211,7 @@ impl DatePeriod {
         }
     }
 
-    /// Convert a NaiveDate to a yearly DatePeriod
+    /// Convert a `NaiveDate` to a yearly `DatePeriod`
     ///
     /// # Examples
     ///
@@ -208,7 +227,7 @@ impl DatePeriod {
         Self::year(date.year() as u32)
     }
 
-    /// Convert a NaiveDate to a quarterly DatePeriod
+    /// Convert a `NaiveDate` to a quarterly `DatePeriod`
     ///
     /// # Examples
     ///
@@ -233,7 +252,7 @@ impl DatePeriod {
         DatePeriod::Quarter(year, quarter)
     }
 
-    /// Convert a NaiveDate to a monthly DatePeriod
+    /// Convert a `NaiveDate` to a monthly `DatePeriod`
     ///
     /// # Examples
     ///
@@ -249,7 +268,7 @@ impl DatePeriod {
         DatePeriod::Month(date.year() as u32, date.month())
     }
 
-    /// Convert a NaiveDate to a daily DatePeriod
+    /// Convert a `NaiveDate` to a daily `DatePeriod`
     ///
     /// # Examples
     ///
@@ -267,6 +286,12 @@ impl DatePeriod {
 
     /// Generate all yearly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
+    ///
+    /// # Errors
+    ///
+    /// This function currently returns `Ok` in all cases; the `Result` return
+    /// type is retained for API symmetry with the other `between_date_as_*`
+    /// helpers which may propagate errors from period arithmetic.
     ///
     /// # Examples
     ///
@@ -294,6 +319,11 @@ impl DatePeriod {
 
     /// Generate all quarterly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if advancing the quarterly period via [`DatePeriod::succ`]
+    /// fails while iterating from `start` to `end`.
     ///
     /// # Examples
     ///
@@ -327,6 +357,11 @@ impl DatePeriod {
     /// Generate all monthly periods between two dates (inclusive)
     /// Returns an empty vector if start > end
     ///
+    /// # Errors
+    ///
+    /// Returns an error if advancing the monthly period via [`DatePeriod::succ`]
+    /// fails while iterating from `start` to `end`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -359,6 +394,11 @@ impl DatePeriod {
     /// Generate all daily periods between two dates (inclusive)
     /// Returns an empty vector if start > end
     ///
+    /// # Errors
+    ///
+    /// Returns an error if advancing the daily period via [`DatePeriod::succ`]
+    /// fails while iterating from `start` to `end`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -390,8 +430,14 @@ impl DatePeriod {
 
     /// Get the first day of this period
     ///
-    /// Returns the first date of the period. Since DatePeriod instances should only
+    /// Returns the first date of the period. Since `DatePeriod` instances should only
     /// be created through validated constructors, this should always succeed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the underlying year/month/day combination cannot be
+    /// represented as a [`NaiveDate`] (for example, a year that overflows
+    /// `i32`).
     ///
     /// # Examples
     ///
@@ -425,6 +471,11 @@ impl DatePeriod {
     /// Get the last day of this period
     ///
     /// Returns the last date of the period.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the period's boundary date cannot be constructed
+    /// (e.g. month arithmetic overflow for quarter/month periods).
     ///
     /// # Examples
     ///
@@ -577,6 +628,11 @@ impl DatePeriod {
 
     /// Get the successor (next) period
     ///
+    /// # Errors
+    ///
+    /// This function currently never fails in practice; the `Result` return
+    /// type is kept for API symmetry with [`DatePeriod::pred`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -615,6 +671,11 @@ impl DatePeriod {
     }
 
     /// Get the predecessor (previous) period
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the period is already at the beginning of the
+    /// supported range (year `0`) and has no predecessor.
     ///
     /// # Examples
     ///
@@ -765,6 +826,11 @@ impl DatePeriod {
     /// Returns the period that is n steps ahead of the current period.
     /// If n is 0, returns the current period.
     ///
+    /// # Errors
+    ///
+    /// This function currently never fails in practice; the `Result` return
+    /// type is kept for API symmetry with [`DatePeriod::pred_n`].
+    ///
     /// # Examples
     ///
     /// ```
@@ -821,6 +887,11 @@ impl DatePeriod {
     /// Returns the period that is n steps back from the current period.
     /// If n is 0, returns the current period.
     /// Returns an error if going back would result in an invalid year (less than 0).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if stepping `n` periods back would underflow past year
+    /// `0` (i.e. there is no representable period that far in the past).
     ///
     /// # Examples
     ///
@@ -887,6 +958,12 @@ impl DatePeriod {
     ///
     /// Positive n advances forward, negative n goes backward.
     /// If n is 0, returns the current period.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error from the underlying [`DatePeriod::succ_n`] /
+    /// [`DatePeriod::pred_n`] call — most notably when a negative offset would
+    /// underflow past year `0`.
     ///
     /// # Examples
     ///
@@ -1175,7 +1252,7 @@ mod tests {
             DatePeriod::year(2024).pred().unwrap(),
             DatePeriod::Year(2023)
         );
-        assert_eq!(DatePeriod::year(0).pred().is_err(), true);
+        assert!(DatePeriod::year(0).pred().is_err());
 
         // Test quarter
         assert_eq!(
@@ -1186,7 +1263,7 @@ mod tests {
             DatePeriod::quarter(2024, 1).unwrap().pred().unwrap(),
             DatePeriod::Quarter(2023, 4)
         );
-        assert_eq!(DatePeriod::quarter(0, 1).unwrap().pred().is_err(), true);
+        assert!(DatePeriod::quarter(0, 1).unwrap().pred().is_err());
 
         // Test month
         assert_eq!(
@@ -1197,7 +1274,7 @@ mod tests {
             DatePeriod::month(2024, 1).unwrap().pred().unwrap(),
             DatePeriod::Month(2023, 12)
         );
-        assert_eq!(DatePeriod::month(0, 1).unwrap().pred().is_err(), true);
+        assert!(DatePeriod::month(0, 1).unwrap().pred().is_err());
 
         // Test daily
         assert_eq!(
@@ -1208,7 +1285,7 @@ mod tests {
             DatePeriod::daily(2024, 1).unwrap().pred().unwrap(),
             DatePeriod::Daily(2023, 365)
         ); // From leap to non-leap
-        assert_eq!(DatePeriod::daily(0, 1).unwrap().pred().is_err(), true);
+        assert!(DatePeriod::daily(0, 1).unwrap().pred().is_err());
     }
 
     #[test]
