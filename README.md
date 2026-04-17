@@ -5,238 +5,87 @@
 [![codecov](https://codecov.io/github/GuoMonth/range_date/graph/badge.svg?token=LPXZVA7GSB)](https://codecov.io/github/GuoMonth/range_date)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful Rust crate for handling date periods with embedded data and comprehensive date range operations.
+A Rust crate for handling date periods (year / quarter / month / day) with validation, parsing, navigation and range generation, built on top of [`chrono`](https://docs.rs/chrono).
 
-## Features
-
-- 🗓️ **Rich Date Periods**: Enum-based periods with embedded year/index data - Year(u32), Quarter(u32, u32), Month(u32, u32), Daily(u32, u32)
-- 🔄 **Type Conversion**: String parsing and serialization support with validation
-- 📅 **Date Range Operations**: Calculate first/last days, check date containment
-- 🎯 **Date Conversion**: Convert NaiveDate to any period type
-- 🔀 **Advanced Period Operations**: Navigate between periods (succ/pred), decompose into sub-periods, aggregate to parent periods, and bulk navigation (succ_n/pred_n/offset_n)
-- 📊 **Range Generation**: Generate all periods between two dates for comprehensive date range analysis
-- 📚 **Comprehensive Documentation**: 26+ doc tests with practical examples for all public methods
-- ⚡ **High Performance**: Built on top of the efficient `chrono` library
-- 🛡️ **Type Safety**: Complete validation with proper error handling
-- 🧪 **Leap Year Support**: Accurate leap year detection and day validation
-
-## Quick Start
-
-Add this to your `Cargo.toml`:
+## Installation
 
 ```toml
 [dependencies]
 range_date = "0.2.3"
 ```
 
-## Usage Examples
-
-### Basic Usage
-
-```rust
-use range_date::range_type::DatePeriod;
-use std::str::FromStr;
-
-// Create date periods with validation
-let q1_2024 = DatePeriod::quarter(2024, 1).unwrap();
-let may_2024 = DatePeriod::month(2024, 5).unwrap();
-
-// String representation
-println!("{}", q1_2024); // Output: 2024Q1
-println!("{}", may_2024); // Output: 2024M5
-
-// Parse from string
-let parsed = DatePeriod::from_str("2024M03").unwrap();
-println!("{:?}", parsed); // DatePeriod::Month(2024, 3)
-
-// Get date ranges
-let first_day = q1_2024.get_first_day()?; // 2024-01-01
-let last_day = q1_2024.get_last_day()?;   // 2024-03-31
-```
-
-### Date Period Construction
-
-```rust
-use range_date::range_type::DatePeriod;
-
-// Create with validation
-let year_2024 = DatePeriod::year(2024);
-let q2_2024 = DatePeriod::quarter(2024, 2).unwrap();   // Q2: April-June
-let march_2024 = DatePeriod::month(2024, 3).unwrap();  // March
-let day_60 = DatePeriod::daily(2024, 60).unwrap();     // 60th day of 2024
-
-// Validation catches errors
-assert!(DatePeriod::quarter(2024, 5).is_err()); // Quarter 5 doesn't exist
-assert!(DatePeriod::month(2024, 13).is_err());  // Month 13 doesn't exist
-assert!(DatePeriod::daily(2023, 366).is_err()); // Day 366 invalid in non-leap year
-```
-
-### Date Conversion
-
-```rust
-use range_date::range_type::DatePeriod;
-use chrono::NaiveDate;
-
-let date = NaiveDate::from_ymd_opt(2024, 8, 15).unwrap(); // August 15, 2024
-
-// Convert to different period types
-let as_year = DatePeriod::from_date_as_year(date);     // 2024Y
-let as_quarter = DatePeriod::from_date_as_quarter(date); // 2024Q3
-let as_month = DatePeriod::from_date_as_month(date);     // 2024M8
-let as_daily = DatePeriod::from_date_as_daily(date);     // 2024D228
-```
-
-### Date Range Operations
-
-```rust
-use range_date::range_type::DatePeriod;
-use chrono::NaiveDate;
-
-let q1_2024 = DatePeriod::quarter(2024, 1).unwrap();
-
-// Get date boundaries
-let start = q1_2024.get_first_day()?; // 2024-01-01
-let end = q1_2024.get_last_day()?;    // 2024-03-31
-
-// Check date containment
-let valentine = NaiveDate::from_ymd_opt(2024, 2, 14).unwrap();
-let contains = q1_2024.contains_date(valentine); // true
-```
-
-### Serialization Support
-
-```rust
-use range_date::range_type::DatePeriod;
-use serde_json;
-
-let quarter = DatePeriod::quarter(2024, 2).unwrap();
-let json = serde_json::to_string(&quarter).unwrap();
-println!("{}", json); // "2024Q2"
-
-let deserialized: DatePeriod = serde_json::from_str(&json).unwrap();
-assert_eq!(deserialized, DatePeriod::Quarter(2024, 2));
-```
-
-### Advanced Period Operations **[NEW]**
-
-```rust
-use range_date::range_type::DatePeriod;
-use chrono::NaiveDate;
-
-// Range generation - Generate all periods between two dates
-let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
-let end = NaiveDate::from_ymd_opt(2024, 6, 30).unwrap();
-let quarters = DatePeriod::between_date_as_quarter(start, end).unwrap();
-assert_eq!(quarters.len(), 2); // Q1 and Q2 2024
-
-// Period navigation - Get next/previous periods
-let q1 = DatePeriod::quarter(2024, 1).unwrap();
-let q2 = q1.succ().unwrap(); // Next: 2024Q2
-let back_to_q1 = q2.pred().unwrap(); // Previous: 2024Q1
-
-// Bulk period navigation - Advance or retreat by multiple steps
-let q4 = q1.succ_n(3).unwrap(); // Advance 3 quarters: 2024Q4
-let back_to_q1_bulk = q4.pred_n(3).unwrap(); // Retreat 3 quarters: 2024Q1
-let offset_q3 = q1.offset_n(2).unwrap(); // Unified offset: 2024Q3
-let offset_back = q4.offset_n(-1).unwrap(); // Unified offset backward: 2024Q3
-
-// Period decomposition - Break down into sub-periods
-let year_2024 = DatePeriod::year(2024);
-let quarters_in_year = year_2024.decompose();
-assert_eq!(quarters_in_year.len(), 4); // 4 quarters in a year
-
-// Period aggregation - Get parent period
-let month = DatePeriod::month(2024, 5).unwrap();
-let quarter = month.aggregate();
-assert_eq!(quarter, DatePeriod::quarter(2024, 2).unwrap());
-```
-
-### Period Information Queries
-
-```rust
-use range_date::range_type::DatePeriod;
-
-let period = DatePeriod::quarter(2024, 2).unwrap();
-
-// Query period information
-assert_eq!(period.get_year(), 2024);
-assert_eq!(period.value(), 2); // Quarter number
-assert_eq!(period.short_name(), "Q");
-assert_eq!(period.period_name(), "QUARTER");
-```
-
-## Date Range Format
-
-The crate uses a compact string format for date periods:
-
-- **Format**: `YYYY[PERIOD][INDEX]`
-- **Examples**:
-  - `2024Y` - Year 2024
-  - `2024Q2` - Q2 2024 (April-June)
-  - `2024M03` - March 2024
-  - `2024D060` / `2024D60` - 60th day of 2024
-
 ## Period Types
 
-| Period | Constructor | String Format | Description |
-|--------|-------------|---------------|-------------|
-| Year | `DatePeriod::year(2024)` | `2024Y` | Entire year |
-| Quarter | `DatePeriod::quarter(2024, 1)` | `2024Q1` | Q1: Jan-Mar, Q2: Apr-Jun, etc. |
-| Month | `DatePeriod::month(2024, 3)` | `2024M3` | Specific month (1-12) |
-| Daily | `DatePeriod::daily(2024, 60)` | `2024D60` | Specific day of year (1-366) |
+| Period  | Constructor                        | String format | Range                |
+| ------- | ---------------------------------- | ------------- | -------------------- |
+| Year    | `DatePeriod::year(2024)`           | `2024Y`       | whole year           |
+| Quarter | `DatePeriod::quarter(2024, 1)?`    | `2024Q1`      | quarter 1..=4        |
+| Month   | `DatePeriod::month(2024, 3)?`      | `2024M3`      | month 1..=12         |
+| Daily   | `DatePeriod::daily(2024, 60)?`     | `2024D60`     | ordinal day 1..=366  |
 
-## API Documentation
+String format: `YYYY<TYPE>[INDEX]`, where `<TYPE>` is one of `Y` / `Q` / `M` / `D`.
 
-For complete API documentation, visit [docs.rs](https://docs.rs/range_date).
+## Usage
 
-## Testing
+```rust
+use range_date::range_type::DatePeriod;
+use chrono::NaiveDate;
+use std::str::FromStr;
 
-Run the comprehensive test suite:
+// Construct & validate
+let q1 = DatePeriod::quarter(2024, 1)?;
+assert!(DatePeriod::month(2024, 13).is_err());
+
+// Parse & display
+let m: DatePeriod = DatePeriod::from_str("2024M03")?;
+assert_eq!(q1.to_string(), "2024Q1");
+
+// Date boundaries & containment
+let first = q1.get_first_day()?;           // 2024-01-01
+let last  = q1.get_last_day()?;            // 2024-03-31
+assert!(q1.contains_date(NaiveDate::from_ymd_opt(2024, 2, 14).unwrap()));
+
+// Convert from a date
+let day = NaiveDate::from_ymd_opt(2024, 8, 15).unwrap();
+let _ = DatePeriod::from_date_as_quarter(day);   // 2024Q3
+
+// Navigate
+let q2 = q1.succ()?;              // next   -> 2024Q2
+let q4 = q1.succ_n(3)?;           // +3     -> 2024Q4
+let _  = q4.pred_n(3)?;           // -3     -> 2024Q1
+let _  = q1.offset_n(-1)?;        // signed -> 2023Q4
+
+// Range generation
+let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+let end   = NaiveDate::from_ymd_opt(2024, 6, 30).unwrap();
+assert_eq!(DatePeriod::between_date_as_quarter(start, end)?.len(), 2);
+
+// Decompose / aggregate
+assert_eq!(DatePeriod::year(2024).decompose().len(), 4);
+assert_eq!(DatePeriod::month(2024, 5)?.aggregate(),
+           DatePeriod::quarter(2024, 2)?);
+
+// Serde
+let json = serde_json::to_string(&q1)?;   // "\"2024Q1\""
+let back: DatePeriod = serde_json::from_str(&json)?;
+assert_eq!(back, q1);
+# Ok::<(), anyhow::Error>(())
+```
+
+## Documentation
+
+Full API reference on [docs.rs](https://docs.rs/range_date).
+
+## Contributing
+
+Issues and pull requests are welcome. Before submitting, please run:
 
 ```bash
-# Run all tests
+cargo fmt --all
+cargo clippy --all-features -- -D warnings
 cargo test
-
-# Run specific test files
-cargo test --test integration_tests
-cargo test --test year_format_tests
-
-# Run tests with output for manual verification
-cargo test test_constructor_examples -- --nocapture
-cargo test test_year_format -- --nocapture
 ```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-We welcome contributions! Here are several ways you can help:
-
-### 🐛 Found a Bug?
-- Open an [issue](https://github.com/GuoMonth/range_date/issues) with a clear description
-- Include code examples that reproduce the problem
-- Mention your Rust version and operating system
-
-### 💡 Have a Feature Request?
-- Check existing [issues](https://github.com/GuoMonth/range_date/issues) to avoid duplicates
-- Open a new issue describing your use case and proposed solution
-- Explain why this feature would be valuable
-
-### 🔧 Want to Contribute Code?
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with comprehensive tests
-4. Ensure all tests pass (`cargo test`)
-5. Run formatting (`cargo fmt`) and linting (`cargo clippy`)
-6. Commit your changes (`git commit -am 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-### 📖 Documentation Improvements?
-- Documentation improvements are always welcome
-- Update examples in README.md or code comments
-- Help improve API documentation
-
-**Have questions or suggestions? Please [open an issue](https://github.com/GuoMonth/range_date/issues) - we'd love to hear from you!**
+Licensed under the [MIT License](LICENSE).
