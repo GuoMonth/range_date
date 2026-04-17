@@ -1,4 +1,4 @@
-//! # range_date
+//! # `range_date`
 //!
 //! A Rust crate for handling date ranges with support for years, quarters, months, and days.
 //!
